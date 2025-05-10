@@ -1,0 +1,216 @@
+{
+  "common": {
+    "loading": "Жүктелуде…",
+    "error": "Қате",
+    "save": "Сақтау",
+    "delete": "Жою",
+    "cancel": "Болдырмау",
+    "close": "Жабу",
+    "guest": "Қонақ",
+    "you": "Сіз"
+  },
+
+  "auth": {
+    "loginTitle": "Аккаунтқа кіру",
+    "registerTitle": "Аккаунт жасау",
+    "usernameLabel": "Пайдаланушы аты",
+    "emailLabel": "Email мекенжайы",
+    "passwordLabel": "Құпия сөз",
+    "loginButton": "Кіру",
+    "registerButton": "Тіркелу",
+    "logoutButton": "Шығу",
+    "noAccount": "Аккаунт жоқ па? Тіркеліңіз",
+    "haveAccount": "Аккаунт бар ма? Кіріңіз",
+    "loggingIn": "Кіруде…",
+    "registering": "Тіркелуде…",
+    "loginSuccess": "Сәтті кірдіңіз!",
+    "registerSuccess": "Тіркелу сәтті өтті!",
+    "registerSuccessGoLogin": "Тіркелу сәтті өтті! Кіріңіз.",
+    "logoutSuccess": "Жүйеден сәтті шықтыңыз.",
+    "loginError": "Кіру қатесі. Email мен құпия сөзді тексеріңіз.",
+    "registerError": "Тіркелу қатесі. Қайталап көріңіз.",
+    "fillFields": "Барлық міндетті өрістерді толтырыңыз.",
+    "fillAllFields": "Атыңызды, email және құпия сөзді енгізіңіз.",
+    "userExists": "Пайдаланушы бұрыннан бар",
+    "emailExists": "Бұл email қолданылған",
+    "usernameExists": "Бұл ат қолданылған"
+  },
+
+  "header": {
+    "title": "ShopSmart",
+    "home": "Басты бет",
+    "login": "Кіру",
+    "register": "Тіркелу",
+    "logout": "Шығу",
+    "welcome": "Сәлем",
+    "profile": "Профиль"
+  },
+
+  "footer": {
+    "text": "© {{year}} ShopSmart. Барлық құқықтар қорғалған."
+  },
+
+  "homePage": {
+    "welcome": "Қош келдіңіз, {{name}}!",
+    "myLists": "Менің тізімдерім",
+    "createNewList": "Жаңа тізім жасау",
+    "listNamePlaceholder": "Тізім атауын енгізіңіз…",
+    "createButton": "Құру",
+    "noLists": "Әзірге тізім жоқ.",
+    "itemsCount": "{{count}} зат",
+    "owner": "Иесі",
+    "shared": "Бөлісілген",
+    "sharedToMeTooltip": "Сізбен бөлісті",
+    "sharedByMeTooltip": "Сіз бөліскен тізім",
+    "youAreOwner": "Сіз иесіз",
+    "enterListName": "Тізім атауын енгізіңіз.",
+    "aiAssistantTitle": "AI Сауда көмекшісі",
+    "aiPromptPlaceholder": "мыс., '6 адамға кешкі ас', 'пайдалы таңғы ас'...",
+    "aiAskButton": "AI‑дан сұрау",
+    "aiLoading": "Ойлануда…",
+    "aiError": "AI көмекшісі қатесі",
+    "enterAiPrompt": "AI сұрауын енгізіңіз.",
+    "removeDuplicatesTooltip": "Қайталауларды жою",
+    "removeDuplicatesShort": "Тазалау",
+    "aiGenerateButton": "Тізім жасау",
+    "aiEmptyList": "AI элементтерді жасай алмады.",
+    "aiSuggestedItems": "AI ұсынған заттар:",
+    "aiAddToListButton": "Осы заттармен тізім жасау"
+  },
+
+  "listPage": {
+    "loading": "Тізім жүктелуде…",
+    "errorLoading": "Тізімді жүктеу қатесі",
+    "backHome": "Басты бетке",
+    "noList": "Тізім табылмады немесе рұқсат жоқ.",
+    "addItemPlaceholder": "Зат атауын енгізіңіз…",
+    "addButton": "Зат қосу",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "owner": "Иесі",
+    "sharedWith": "Бөлісілгендер",
+    "share": "Бөлісу",
+    "shareList": "Тізіммен бөлісу",
+    "removeDuplicates": "Қайталауларды жою",
+    "removeDuplicatesShort": "Тазалау",
+    "cleaning": "Тазалануда…",
+    "cleaned": "Қайталаулар жойылды"
+  },
+
+  "members": {
+    "title": "Тізім қатысушылары",
+    "roleEditor": "Редактор",
+    "roleViewer": "Тек көру",
+    "youOwner": "Сіз · иесіз",
+    "pending": "шақырылды",
+    "noMembers": "Әзірге ешкім шақырылмады.",
+    "changeRole": "Рөлін өзгерту",
+    "remove": "Тізімнен шығару",
+    "title": "Қатысушылар",
+    "pending": "күтіп тұр"
+  },
+
+  "shoppingList": {
+    "empty": "Тізім бос. Заттар қосыңыз!"
+  },
+
+  "addItemForm": {
+    "placeholder": "Зат атауын енгізіңіз…",
+    "addButton": "Қосу"
+  },
+
+  "shareModal": {
+    "title": "«{{listName}}» тізімімен бөлісу",
+    "emailLabel": "Email мекенжайы",
+    "inviteLabel": "Email арқылы шақыру:",
+    "emailPlaceholder": "user@example.com",
+    "inviteButton": "Шақыру",
+    "sendButton": "Шақыру жіберу",
+    "sent": "Шақыру жіберілді!",
+    "error": "Шақыру жіберілмеді",
+    "alreadyShared": "Бұрыннан бөлісілген",
+    "sharedWithTitle": "Қазір бөлісілгендер:",
+    "notShared": "Бұл тізіммен әлі бөліскен жоқсыз.",
+    "removeAccess": "Рұқсатты жою",
+    "remove": "Жою",
+    "enterEmail": "Дұрыс email енгізіңіз.",
+    "viewer": "Көрермен",
+    "editor": "Редактор"
+  },
+
+  "notFoundPage": {
+    "title": "Бет табылмады",
+    "message": "Кешіріңіз! Бұл бет табылмады.",
+    "goHome": "Басты бетке өту"
+  },
+
+  "item": {
+    "bought": "Сатып алынды",
+    "unbought": "Сатып алынбады"
+  },
+
+  "theme": {
+    "light": "Жарық режим",
+    "dark": "Қараңғы режим"
+  },
+
+  "language": {
+    "english": "Ағылшын",
+    "russian": "Орысша",
+    "kazakh": "Қазақша"
+  },
+
+  "words": {
+    "list": "Тізім",
+    "item": "Зат",
+    "owner": "Иесі",
+    "shared": "Бөлісілген",
+    "pending": "Күтіп тұр",
+    "accepted": "Қабылданды",
+    "declined": "Бас тартылды",
+    "editor": "Редактор",
+    "viewer": "Көрермен",
+    "invite": "Шақыру",
+    "remove": "Жою",
+    "add": "Қосу",
+    "delete": "Жою",
+    "edit": "Өзгерту",
+    "user": "Пайдаланушы",
+    "email": "Email",
+    "role": "Рөл",
+    "status": "Мәртебе",
+    "yes": "Иә",
+    "no": "Жоқ",
+    "cancel": "Болдырмау",
+    "save": "Сақтау",
+    "close": "Жабу",
+    "profile": "Профиль",
+    "login": "Кіру",
+    "register": "Тіркелу",
+    "logout": "Шығу",
+    "home": "Басты бет",
+    "create": "Құру",
+    "accept": "Қабылдау",
+    "decline": "Бас тарту",
+    "ai": "AI",
+    "suggestion": "Ұсыныс",
+    "generate": "Жасау",
+    "duplicate": "Қайталау",
+    "clean": "Тазалау",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "other": "Басқа",
+    "toiletries": "Тазалық құралдары",
+    "fruitsVegetables": "Жеміс-жидек және көкөніс",
+    "dairyCheese": "Сүт және ірімшік",
+    "bakery": "Нан-тоқаш өнімдері"
+  },
+
+  "units": {
+    "pcs": "дана",
+    "kg": "кг",
+    "l": "л",
+    "m": "м",
+    "pack": "пакет"
+  }
+}

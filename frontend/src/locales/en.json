@@ -1,0 +1,216 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "close": "Close",
+    "guest": "Guest",
+    "you": "You"
+  },
+
+  "auth": {
+    "loginTitle": "Sign in to your account",
+    "registerTitle": "Create your account",
+    "usernameLabel": "Username",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "loginButton": "Sign in",
+    "registerButton": "Register",
+    "logoutButton": "Logout",
+    "noAccount": "Don't have an account? Register",
+    "haveAccount": "Already have an account? Sign in",
+    "loggingIn": "Signing in…",
+    "registering": "Registering…",
+    "loginSuccess": "Login successful!",
+    "registerSuccess": "Registration successful!",
+    "registerSuccessGoLogin": "Registration successful! Please log in.",
+    "logoutSuccess": "Logged out successfully.",
+    "loginError": "Login failed. Please check your credentials.",
+    "registerError": "Registration failed. Please try again.",
+    "fillFields": "Please fill in all required fields.",
+    "fillAllFields": "Please enter username, email and password.",
+    "userExists": "User already exists",
+    "emailExists": "A user with this email already exists",
+    "usernameExists": "A user with this username already exists"
+  },
+
+  "header": {
+    "title": "ShopSmart",
+    "home": "Home",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "welcome": "Hi",
+    "profile": "Profile"
+  },
+
+  "footer": {
+    "text": "© {{year}} ShopSmart. All rights reserved."
+  },
+
+  "homePage": {
+    "welcome": "Welcome, {{name}}!",
+    "myLists": "My Lists",
+    "createNewList": "Create new list",
+    "listNamePlaceholder": "Enter list name…",
+    "createButton": "Create",
+    "noLists": "You haven't created any lists yet.",
+    "itemsCount": "{{count}} item(s)",
+    "owner": "Owner",
+    "shared": "Shared",
+    "sharedToMeTooltip": "Shared with you",
+    "sharedByMeTooltip": "You shared this list",
+    "youAreOwner": "You are the owner",
+    "enterListName": "Please enter a list name.",
+    "aiAssistantTitle": "AI Shopping Assistant",
+    "aiPromptPlaceholder": "e.g. 'dinner for 6', 'healthy breakfast ideas'…",
+    "aiAskButton": "Ask AI",
+    "aiLoading": "Thinking…",
+    "aiError": "AI Assistant error",
+    "enterAiPrompt": "Please enter a prompt for AI.",
+    "removeDuplicatesTooltip": "Remove duplicate items",
+    "removeDuplicatesShort": "Clean",
+    "aiGenerateButton": "Generate list",
+    "aiEmptyList": "AI couldn't generate items for this request.",
+    "aiSuggestedItems": "AI suggested items:",
+    "aiAddToListButton": "Create list with these items"
+
+  },
+
+  "listPage": {
+    "loading": "Loading list…",
+    "errorLoading": "Error loading list",
+    "backHome": "Back to Home",
+    "noList": "List not found or you have no access.",
+    "addItemPlaceholder": "Enter item name…",
+    "addButton": "Add item",
+    "online": "Online",
+    "offline": "Offline",
+    "owner": "Owner",
+    "sharedWith": "Shared with",
+    "share": "Share",
+    "shareList": "Share list",
+    "removeDuplicates": "Remove duplicates",
+    "removeDuplicatesShort": "Clean",
+    "cleaning": "Cleaning…",
+    "cleaned": "Duplicates removed"
+  },
+
+  "members": {
+    "title": "List members",
+    "roleEditor": "Editor",
+    "roleViewer": "Viewer",
+    "youOwner": "You · owner",
+    "pending": "invited",
+    "noMembers": "No one invited yet.",
+    "changeRole": "Change role",
+    "remove": "Remove from list",
+    "title": "Participants",
+    "pending": "waiting"
+  },
+
+  "shoppingList": {
+    "empty": "The list is empty. Add some items!"
+  },
+
+  "addItemForm": {
+    "placeholder": "Enter item name…",
+    "addButton": "Add"
+  },
+
+  "shareModal": {
+    "title": "Share \"{{listName}}\"",
+    "emailLabel": "Email address",
+    "inviteLabel": "Invite user by email:",
+    "emailPlaceholder": "user@example.com",
+    "inviteButton": "Invite",
+    "sendButton": "Send invite",
+    "sent": "Invitation sent!",
+    "error": "Failed to send invitation",
+    "alreadyShared": "Already shared",
+    "sharedWithTitle": "Currently shared with:",
+    "notShared": "Not shared with anyone yet.",
+    "removeAccess": "Remove access for",
+    "remove": "Remove",
+    "enterEmail": "Please enter a valid email address."
+  },
+
+  "notFoundPage": {
+    "title": "Page not found",
+    "message": "Oops! The page you're looking for doesn't exist.",
+    "goHome": "Go to homepage"
+  },
+
+  "item": {
+    "bought": "Bought",
+    "unbought": "Unbought"
+  },
+
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode"
+  },
+
+  "language": {
+    "english": "English",
+    "russian": "Russian",
+    "kazakh": "Kazakh"
+  },
+  
+  "words": {
+    "list": "List",
+    "item": "Item",
+    "owner": "Owner",
+    "shared": "Shared",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "editor": "Editor",
+    "viewer": "Viewer",
+    "invite": "Invite",
+    "remove": "Remove",
+    "add": "Add",
+    "delete": "Delete",
+    "edit": "Edit",
+    "user": "User",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "home": "Home",
+    "create": "Create",
+    "accept": "Accept",
+    "decline": "Decline",
+    "ai": "AI",
+    "suggestion": "Suggestion",
+    "generate": "Generate",
+    "duplicate": "Duplicate",
+    "clean": "Clean",
+    "online": "Online",
+    "offline": "Offline",
+    "other": "Other",
+    "toiletries": "Toiletries",
+    "fruitsVegetables": "Fruits & Vegetables",
+    "dairyCheese": "Dairy & Cheese",
+    "bakery": "Bakery"
+  },
+
+  "units": {
+    "pcs": "pcs",
+    "kg": "kg",
+    "l": "l",
+    "m": "m",
+    "pack": "pack"
+  }
+
+}
