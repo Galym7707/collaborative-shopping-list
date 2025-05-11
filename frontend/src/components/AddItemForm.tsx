@@ -3,15 +3,8 @@ import React, { useState } from 'react';
 import { useTranslation }   from 'react-i18next';
 import { PlusIcon }         from '@heroicons/react/24/solid';
 import { useListStore }     from '../store/listStore';
-import { Unit }             from '../store/listTypes'; // Убедись, что Unit экспортируется
-import { CATEGORIES, CategoryKey } from '../constants/categories'; // Создай этот файл
-
-// Создай файл src/constants/categories.ts, если его нет:
-/*
-// File: C:\Users\galym\Desktop\ShopSmart\frontend\src\constants\categories.ts
-export const CATEGORIES = [ 'other', 'toiletries', 'fruitsVegetables', 'dairyCheese', 'bakery' ] as const;
-export type CategoryKey = typeof CATEGORIES[number];
-*/
+import { Unit, Item }       from '../store/listTypes'; // Импортируем Unit и Item
+import { CATEGORIES, CategoryKey } from '../constants/categories';
 
 const UNITS: Unit[] = ['pcs', 'kg', 'l', 'm', 'pack'];
 
@@ -21,12 +14,11 @@ const AddItemForm: React.FC<Props> = ({ listId }) => {
   const { t }      = useTranslation();
   const addItemAPI = useListStore(s => s.addItemAPI);
 
-  const [name, setName]           = useState('');
-  const [qty,  setQty]            = useState<number>(1);
-  const [unit, setUnit]           = useState<Unit>('pcs');
-  // const [ppu,  setPpu]            = useState<number | ''>(''); // Убрали
-  const [cat,  setCat]            = useState<CategoryKey>('other');
-  const [loading, setLoading]     = useState(false);
+  const [name, setName] = useState('');
+  const [qty,  setQty]  = useState<number>(1);
+  const [unit, setUnit] = useState<Unit>('pcs');
+  const [cat,  setCat]  = useState<CategoryKey>('other');
+  const [loading, setLoading] = useState(false);
 
   const reset = () => { setName(''); setQty(1); setUnit('pcs'); setCat('other'); };
 
@@ -35,13 +27,14 @@ const AddItemForm: React.FC<Props> = ({ listId }) => {
     const trimmedName = name.trim();
     if (!trimmedName || loading) return;
     setLoading(true);
-    await addItemAPI(listId, {
+    // Собираем payload в соответствии с Partial<Omit<Item, ...>> & { name: string }
+    const payload: Partial<Omit<Item, '_id' | 'isBought' | 'boughtBy'>> & { name: string } = {
       name: trimmedName,
       quantity: qty,
       unit,
       category: cat,
-      // pricePerUnit и totalCost не передаем, если их нет в Item
-    });
+    };
+    await addItemAPI(listId, payload);
     reset();
     setLoading(false);
   };

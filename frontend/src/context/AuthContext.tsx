@@ -2,12 +2,15 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import toast, { ToastOptions } from 'react-hot-toast'; // Уточнили импорт ToastOptions
+import toast from 'react-hot-toast'; // Убрали ToastOptions, ReactNode для toast достаточен
 import { useTranslation } from 'react-i18next';
 import { useListStore } from '../store/listStore';
-import { UserInfo } from '../store/listTypes'; // Импортируем UserInfo
+import { UserInfo, Item } from '../store/listTypes'; // Импортируем Item
 
-// Типы AuthResponse и AuthContextType остаются такими же
+// Убираем дублирующиеся определения List, SharedWithEntry, т.к. они в listTypes
+// export interface SharedWithEntry { ... }
+// export interface List { ... }
+
 interface AuthResponse { token: string; user: UserInfo; message?: string; }
 interface AuthContextType {
   user: UserInfo | null; token: string | null; loading: boolean; isLoggingIn: boolean;
@@ -33,8 +36,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoggingIn(true); let errorMessage: string | undefined;
     try {
       const response = await api<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
-      if (response.token && response.user) { /* ... */ } else { errorMessage = response.message || t('auth.loginError'); toast.error(errorMessage as React.ReactNode); }
-    } catch (err: any) { errorMessage = err.data?.message || err.message || t('auth.loginError'); toast.error(errorMessage as React.ReactNode); }
+      if (response.token && response.user) { /* ... */ } else { errorMessage = response.message || t('auth.loginError'); toast.error(errorMessage); }
+    } catch (err: any) { errorMessage = err.data?.message || err.message || t('auth.loginError'); toast.error(errorMessage); }
     finally { setIsLoggingIn(false); } return errorMessage;
   };
   const register = async (userData: { username?: string; email: string; password?: string }) => {
@@ -42,15 +45,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await api<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
       if (response.token && response.user) { /* ... */ toast.success(t('auth.registerSuccessGoLogin') || 'Registered! Please log in.'); navigate('/login'); }
-      else { errorMessage = response.message || t('auth.registerError'); toast.error(errorMessage as React.ReactNode); }
-    } catch (err: any) { errorMessage = err.data?.message || err.message || t('auth.registerError'); toast.error(errorMessage as React.ReactNode); }
+      else { errorMessage = response.message || t('auth.registerError'); toast.error(errorMessage); }
+    } catch (err: any) { errorMessage = err.data?.message || err.message || t('auth.registerError'); toast.error(errorMessage); }
     finally { setIsRegistering(false); } return errorMessage;
   };
 
   const logout = () => {
     localStorage.removeItem('authToken'); localStorage.removeItem('authUser');
     setToken(null); setUser(null);
-    const { disconnectSocket, setLists, clearCurrentList } = useListStore.getState(); // Деструктурируем правильно
+    const { disconnectSocket, setLists, clearCurrentList } = useListStore.getState();
     disconnectSocket();
     setLists([]); // Используем setLists для очистки
     clearCurrentList();

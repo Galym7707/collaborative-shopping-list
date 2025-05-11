@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useListStore } from '../store/listStore';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { List, SharedWithEntry } from '../store/listTypes';
 
 interface ShareListModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
           <XMarkIcon className="h-6 w-6" />
         </button>
         <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          Share “{list.name}”
+          Share "{list.name}"
         </h2>
 
         <div className="space-y-4">

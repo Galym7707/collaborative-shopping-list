@@ -13,8 +13,8 @@ export interface Item {
   quantity?: number;
   unit?: string;
   category?: string;
-  // pricePerUnit?: number; // Убрано, т.к. вызывает ошибки в ShoppingList
-  // totalCost?: number;    // Убрано
+  // pricePerUnit?: number; // УБРАНО
+  // totalCost?: number;    // УБРАНО
   boughtBy?: string[];
 }
 
