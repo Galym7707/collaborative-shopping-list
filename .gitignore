@@ -5,7 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 node_modules/
-dist/ # Если у фронтенда есть папка dist
+dist/
 .env
 .env.*
 !/.env.example
@@ -13,3 +13,14 @@ dist/ # Если у фронтенда есть папка dist
 # Vite
 .vite/
 dist-ssr/
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Package managers (если не используешь)
+pnpm-lock.yaml
+yarn.lock
+
+# Coverage
+coverage/
