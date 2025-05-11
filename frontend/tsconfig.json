@@ -1,26 +1,29 @@
+// File: C:\Users\galym\Desktop\ShopSmart\frontend\tsconfig.json
 {
   "compilerOptions": {
-    "target": "ESNext", 
+    "target": "ESNext", // Поддержка современных возможностей JS
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
-    "esModuleInterop": true, 
+    "esModuleInterop": true, // Для лучшей совместимости с CommonJS модулями
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext", 
-    "moduleResolution": "Node", 
+    "module": "ESNext", // <-- ВАЖНО для import.meta.env
+    "moduleResolution": "bundler", // Рекомендовано для Vite 5+ (или "Node" для старых версий)
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "noEmit": true, // Vite сам занимается сборкой
     "jsx": "react-jsx",
-    "baseUrl": "./src", 
+    "baseUrl": "./src", // Позволяет использовать абсолютные пути типа "@/components/..."
     "paths": {
-      "@/*": ["*"] 
-    },
-    "typeRoots": ["./node_modules/@types", "./src/types"] /
+      "@/*": ["*"] // Пример: import MyComponent from '@/components/MyComponent'
+    }
+    // "typeRoots": ["./node_modules/@types", "./src/types"] // УБИРАЕМ или ИСПРАВЛЯЕМ, если есть папка src/types
+    // Если у тебя НЕТ папки src/types с глобальными декларациями .d.ts, эту строку можно удалить.
+    // Если ЕСТЬ, то путь должен быть правильным, например: "./src/custom-types"
   },
-  "include": ["src"],
+  "include": ["src", "vite.config.ts"], // Включаем vite.config.ts для проверки типов
   "references": [{ "path": "./tsconfig.node.json" }]
 }

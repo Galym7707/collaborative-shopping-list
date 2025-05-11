@@ -24,6 +24,18 @@ const ListItemSchema: Schema = new Schema<IListItem>({
   // boughtBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 }, { _id: false });
 
+// Добавить интерфейс для sharedWith
+export interface ISharedWith {
+  user: Types.ObjectId;
+  role: 'viewer' | 'editor';
+  status: 'pending' | 'accepted' | 'declined';
+}
+
+const SharedWithSchema: Schema = new Schema<ISharedWith>({
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  role: { type: String, enum: ['viewer', 'editor'], default: 'viewer' },
+  status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' }
+}, { _id: false });
 
 // Интерфейс для документа списка
 export interface IList extends Document {
@@ -31,7 +43,7 @@ export interface IList extends Document {
   owner: Types.ObjectId; // Ссылка на User
   name: string;
   items: Types.DocumentArray<IListItem & Document>; // Типизируем как DocumentArray
-  sharedWith: Types.ObjectId[]; // <--- УПРОЩЕНО: Массив ID пользователей
+  sharedWith: { user: Types.ObjectId, role: 'viewer' | 'editor', status: 'pending' | 'accepted' | 'declined' }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,7 +54,7 @@ const ListSchema: Schema = new Schema<IList>({
   owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   name: { type: String, required: true, trim: true },
   items: [ListItemSchema],
-  sharedWith: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }], // <--- УПРОЩЕНО
+  sharedWith: [SharedWithSchema],
 }, {
   timestamps: true,
   _id: false,
