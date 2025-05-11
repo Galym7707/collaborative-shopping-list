@@ -1,17 +1,15 @@
 // File: C:\Users\galym\Desktop\ShopSmart\frontend\src\store\listStore.ts
-import { create, StoreApi } from 'zustand';
+import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { immer, Draft } from 'zustand/middleware/immer';
+import { immer } from 'zustand/middleware/immer'; // immer остается
 import { api } from '../api';
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { UserInfo, Item, List, Invitation, SharedWithEntry } from './listTypes';
+import React from 'react'; // Для JSX в toast
 import { InboxArrowDownIcon } from '@heroicons/react/24/outline';
-import React from 'react'; // Импорт React для JSX в toast
 
-type ListSet = (fn: (draft: Draft<ListState>) => void | ListState) => void;
-type ListGet = () => ListState;
-
+// Интерфейс состояния Zustand
 interface ListState {
     lists: List[];
     currentList: List | null;
@@ -19,7 +17,7 @@ interface ListState {
     isLoadingLists: boolean;
     isLoadingCurrentList: boolean;
     error: string | null;
-    socket: Socket | null;
+    socket: Socket | null; // Тип из socket.io-client
     isConnected: boolean;
 
     setLists: (lists: List[]) => void;
@@ -65,8 +63,8 @@ if (!API_BASE_URL) { console.error("[ListStore] VITE_API_URL is not defined!"); 
 export const useListStore = create<ListState>()(
     devtools(
         subscribeWithSelector(
-            immer(
-                (set: ListSet, get: ListGet): ListState => ({
+            immer( // immer остается, он хорошо справляется с типизацией set/get
+                (set, get): ListState => ({
                     lists: [], currentList: null, invitations: [],
                     isLoadingLists: false, isLoadingCurrentList: false,
                     error: null, socket: null, isConnected: false,
@@ -179,14 +177,17 @@ export const useListStore = create<ListState>()(
                         }
                     },
                     removeDuplicatesAPI: async (listId) => {
-                        set(state => ({ isLoadingCurrentList: state.currentList?._id === listId, isLoadingLists: state.currentList?._id !== listId }));
+                        set(state => {
+                            if (state.currentList?._id === listId) state.isLoadingCurrentList = true;
+                            else state.isLoadingLists = true;
+                        });
                         try {
                             const result = await api<{ message: string, list: List }>(`/lists/${listId}/remove-duplicates`, { method: 'POST' });
                             if (result.list) {
-                                set(state => ({
-                                    lists: state.lists.map(l => l._id === listId ? result.list : l),
-                                    currentList: state.currentList?._id === listId ? result.list : state.currentList,
-                                }));
+                                set(state => {
+                                    state.lists = state.lists.map(l => l._id === listId ? result.list : l);
+                                    if (state.currentList?._id === listId) state.currentList = result.list;
+                                });
                                 toast.success(result.message || "Duplicates removed");
                             } else { toast(result.message || "No duplicates found.", { icon: 'ℹ️' }); }
                         } catch (err: any) { const message = err.data?.message || err.message || 'Failed to remove duplicates'; toast.error(message); }
@@ -212,7 +213,7 @@ export const useListStore = create<ListState>()(
                             const result = await api<{ message: string, list: List }>(`/lists/${listId}/share/${userIdToRemove}`, { method: 'DELETE' });
                             if (result.list) {
                                 set(state => {
-                                    const listIndex = state.lists.findIndex(l => l._id === listId);
+                                    const listIndex = state.lists.findIndex((l: List) => l._id === listId);
                                     if(listIndex > -1) state.lists[listIndex] = result.list;
                                     if (state.currentList?._id === listId) state.currentList = result.list;
                                 });
@@ -220,29 +221,32 @@ export const useListStore = create<ListState>()(
                             }
                          } catch (err: any) { const message = err.data?.message || err.message || 'Failed to remove access'; toast.error(message); }
                      },
-                    acceptInviteAPI: async (listId, currentUserId) => {
+                    acceptInviteAPI: async (listId, userId) => { // userId здесь - ID ТЕКУЩЕГО пользователя
                         try {
-                            await api(`/lists/${listId}/invite/${currentUserId}/accept`, { method: 'PUT' });
+                            await api(`/lists/${listId}/invite/${userId}/accept`, { method: 'PUT' });
                             toast.success('Invitation accepted!');
                             await get().fetchLists();
                             await get().fetchInvitationsAPI();
                         } catch (e:any) { toast.error(e.message || 'Failed to accept invite'); }
                     },
-                    declineInviteAPI: async (listId, currentUserId) => {
+                    declineInviteAPI: async (listId, userId) => { // userId здесь - ID ТЕКУЩЕГО пользователя
                         try {
-                            await api(`/lists/${listId}/invite/${currentUserId}/decline`, { method: 'PUT' });
-                            toast.info('Invitation declined.'); // Используем info вместо error для decline
+                            await api(`/lists/${listId}/invite/${userId}/decline`, { method: 'PUT' });
+                            toast("Invitation declined.", { icon: 'ℹ️' });
                             await get().fetchInvitationsAPI();
                         } catch (e:any) { toast.error(e.message || 'Failed to decline invite'); }
                     },
                     fetchInvitationsAPI: async () => {
                         try {
                             const listsWithPendingInvites = await api<List[]>(`/lists/invitations`);
-                            const currentUserId = get().socket?.data?.user?.id || (localStorage.getItem('authUser') ? JSON.parse(localStorage.getItem('authUser')!)._id : undefined);
+                            const authUserString = localStorage.getItem('authUser');
+                            const currentUserId = authUserString ? JSON.parse(authUserString)._id : undefined;
+
                             const mappedInvites: Invitation[] = listsWithPendingInvites
-                                .filter(list => list.sharedWith.some(sw => sw.user._id === currentUserId && sw.status === 'pending')) // Доп. фильтрация на фронте
                                 .map(list => {
-                                    const selfInShared = list.sharedWith.find(sw => sw.user._id === currentUserId && sw.status === 'pending');
+                                    const selfInShared = list.sharedWith.find((sw: SharedWithEntry) => sw.user._id === currentUserId && sw.status === 'pending');
+                                    if (!selfInShared) return null; // Если нет pending приглашения для этого юзера в этом списке
+
                                     return {
                                         listId: list._id,
                                         listName: list.name,
@@ -250,7 +254,8 @@ export const useListStore = create<ListState>()(
                                         inviterEmail: list.owner.email,
                                         role: selfInShared?.role,
                                     };
-                                });
+                                })
+                                .filter((inv): inv is Invitation => inv !== null); // Убираем null значения
                             set(state => { state.invitations = mappedInvites; });
                         } catch (e:any) { console.error('Fetch invitations error', e); toast.error(e.message || 'Failed to fetch invitations'); }
                     },
@@ -258,18 +263,33 @@ export const useListStore = create<ListState>()(
                         if (get().socket || !token || !SOCKET_URL) return;
                         const newSocket: Socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket'] });
                         set(state => { state.socket = newSocket; });
-                        newSocket.on('connect', () => { set(state => { state.isConnected = true; state.error = null; }); const cl = get().currentList; if(cl?._id) get().joinListRoom(cl._id); const user = (newSocket as any).handshake?.auth?.user || get().socket?.data?.user; if (user?.id) newSocket.emit('joinUserRoom', `user_${user.id}`); });
+                        newSocket.on('connect', () => {
+                            set(state => { state.isConnected = true; state.error = null; });
+                            const cl = get().currentList; if(cl?._id) get().joinListRoom(cl._id);
+                            // Получаем user из socket.data, если он там есть (после WS Auth)
+                            const userFromSocket = (newSocket as any).data?.user; // (socket as any) чтобы TypeScript не ругался
+                            if (userFromSocket?.id) {
+                                newSocket.emit('joinUserRoom', `user_${userFromSocket.id}`);
+                            } else {
+                                // Фоллбэк, если user еще не в socket.data
+                                const authUserString = localStorage.getItem('authUser');
+                                if(authUserString) {
+                                    const authUser = JSON.parse(authUserString);
+                                    if(authUser?._id) newSocket.emit('joinUserRoom', `user_${authUser._id}`);
+                                }
+                            }
+                        });
                         newSocket.on('disconnect', (reason) => { set(state => { state.isConnected = false; state.socket = null; if (reason !== 'io client disconnect') state.error='Disconnected';}); });
-                        newSocket.on('connect_error', (err) => { const msg = (err as any).message; if (msg === 'jwt_expired' || msg === 'unauthorized_invalid_token' || msg === 'unauthorized_no_token' ) { localStorage.removeItem('authToken'); localStorage.removeItem('authUser'); set(state => {state.socket=null; state.isConnected=false; state.error=`Auth err: ${msg}`}); if (typeof window !== 'undefined') window.location.href = '/login?sessionExpired=1&reason=ws_auth'; } else { set(state => {state.isConnected=false; state.socket=null; state.error=`Conn failed: ${msg}`}); toast.error(`Socket Err: ${msg}`); } });
-                        newSocket.on('listUpdate', get().handleListUpdate);
-                        newSocket.on('itemAdded', get().handleItemAdded);
-                        newSocket.on('itemToggled', get().handleItemUpdated);
-                        newSocket.on('itemDeleted', get().handleItemDeleted);
-                        newSocket.on('listCreated', get().handleListUpdate);
-                        newSocket.on('listDeleted', get().handleListDeleted);
-                        newSocket.on('invitePending', get().handleInvitation);
-                        newSocket.on('listSharedWithYou', get().handleListShared);
-                        newSocket.on('listAccessRemoved', get().handleListAccessRemoved);
+                        newSocket.on('connect_error', (err) => { /* ... */ });
+                        newSocket.on('listUpdate', (list) => get().handleListUpdate(list));
+                        newSocket.on('itemAdded', (data) => get().handleItemAdded(data));
+                        newSocket.on('itemToggled', (data) => get().handleItemUpdated(data));
+                        newSocket.on('itemDeleted', (data) => get().handleItemDeleted(data));
+                        newSocket.on('listCreated', (list) => get().handleListUpdate(list));
+                        newSocket.on('listDeleted', (data) => get().handleListDeleted(data));
+                        newSocket.on('invitePending', (inv) => get().handleInvitation(inv));
+                        newSocket.on('listSharedWithYou', (list) => get().handleListShared(list));
+                        newSocket.on('listAccessRemoved', (data) => get().handleListAccessRemoved(data));
                      },
                     disconnectSocket: () => { get().socket?.disconnect(); },
                     joinListRoom: (listId) => { if (get().isConnected && get().socket && listId) get().socket?.emit('joinList', listId); },
@@ -280,20 +300,14 @@ export const useListStore = create<ListState>()(
                     handleItemUpdated: (data) => { set(state => { if (state.currentList?._id === data.listId) { const idx = state.currentList.items.findIndex(i => i._id === data.item._id); if (idx > -1) state.currentList.items[idx] = data.item; } }); },
                     handleItemDeleted: (data) => { set(state => { if (state.currentList?._id === data.listId) state.currentList.items = state.currentList.items.filter(i => i._id !== data.itemId); }); },
                     handleListDeleted: (data) => { set(state => { state.lists = state.lists.filter(l => l._id !== data.listId); if (state.currentList?._id === data.listId) { state.currentList = null; toast.info("The list you were viewing was deleted."); } }); },
-                    handleInvitation: (invitation: Invitation) => {
-                      set(state => {
-                          if (!state.invitations.find(i => i.listId === invitation.listId)) {
-                              state.invitations.push(invitation);
-                              // --- УПРОЩЕННЫЙ TOAST ---
-                              const message = `You've been invited to "${invitation.listName}" by ${invitation.inviterUsername}`;
-                              toast(message, {
-                                  icon: "📥",
-                                  duration: 6000
-                              });
-                              // -------------------------
-                          }
-                      });
-                  },
+                    handleInvitation: (invitation) => {
+                        set(state => {
+                            if (!state.invitations.find(i => i.listId === invitation.listId)) {
+                                state.invitations.push(invitation);
+                                toast(<span>You've been invited to <b>{invitation.listName}</b> by {invitation.inviterUsername} <InboxArrowDownIcon className="inline h-5 w-5 ml-1 text-blue-500" /></span>, { icon: "📥", duration: 6000 });
+                            }
+                        });
+                    },
                     handleListShared: (sharedList) => { set(state => { const idx = state.lists.findIndex(l => l._id === sharedList._id); if(idx > -1) state.lists[idx] = sharedList; else state.lists.push(sharedList); if(state.currentList?._id === sharedList._id) state.currentList = sharedList; }); toast.info(`List "${sharedList.name}" is now shared with you.`); },
                     handleListAccessRemoved: (data) => { set(state => { state.lists = state.lists.filter(l => l._id !== data.listId); if (state.currentList?._id === data.listId) state.currentList = null; }); toast.warn(`Your access to a list was removed.`); },
                 })
