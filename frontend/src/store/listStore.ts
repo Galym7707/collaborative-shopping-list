@@ -140,7 +140,7 @@ export const useListStore = create(
                         const addedItem = await api<Item>(`/lists/${listId}/items`, { method: 'POST', body: JSON.stringify(payload) });
                         if (addedItem) {
                             set((state: any) => {
-                                if (state.currentList?._id === listId && !state.currentList.items.some((i: Item) => i._id === addedItem._id)) {
+                                if (state.currentList?._id === listId && !state.currentList.items.some((i: any) => i._id === addedItem._id)) {
                                     state.currentList.items.push(addedItem);
                                 }
                             });
@@ -156,7 +156,7 @@ export const useListStore = create(
                         if (updatedItem) {
                             set((state: any) => {
                                 if (state.currentList?._id === listId) {
-                                    const itemIndex = state.currentList.items.findIndex((i: Item) => i._id === itemId);
+                                    const itemIndex = state.currentList.items.findIndex((i: any) => i._id === itemId);
                                     if (itemIndex > -1) state.currentList.items[itemIndex] = updatedItem;
                                 }
                             });
@@ -166,16 +166,16 @@ export const useListStore = create(
                 removeItemAPI: async (listId: string, itemId: string): Promise<void> => {
                     console.log(`[ListStore] removeItemAPI for list ${listId}, item ${itemId}`);
                     const currentList = get().currentList;
-                    const itemToRemove = currentList?.items.find(i => i._id === itemId);
+                    const itemToRemove = currentList?.items.find((i: any) => i._id === itemId);
                     const originalItems = currentList ? [...currentList.items] : [];
 
-                    set(state => { if (state.currentList?._id === listId) state.currentList.items = state.currentList.items.filter(i => i._id !== itemId);});
+                    set((state: any) => { if (state.currentList?._id === listId) state.currentList.items = state.currentList.items.filter((i: any) => i._id !== itemId);});
                     try {
                         await api(`/lists/${listId}/items/${itemId}`, { method: 'DELETE' });
                         if (itemToRemove) toast.success(`Item "${itemToRemove.name}" removed`); else toast.success('Item removed');
                     } catch (err: any) {
                         const message = err.data?.message || err.message || 'Failed to remove item'; toast.error(message);
-                        set(state => { if (state.currentList?._id === listId) state.currentList.items = originalItems; });
+                        set((state: any) => { if (state.currentList?._id === listId) state.currentList.items = originalItems; });
                     }
                 },
                 deleteListAPI: async (listId: string): Promise<boolean> => {
@@ -183,8 +183,8 @@ export const useListStore = create(
                     set({ isLoadingLists: true });
                     try {
                         await api(`/lists/${listId}`, { method: 'DELETE' });
-                        set(state => {
-                            state.lists = state.lists.filter(l => l._id !== listId);
+                        set((state: any) => {
+                            state.lists = state.lists.filter((l: any) => l._id !== listId);
                             if (state.currentList?._id === listId) state.currentList = null;
                             state.isLoadingLists = false;
                         });
@@ -197,12 +197,12 @@ export const useListStore = create(
                 },
                 removeDuplicatesAPI: async (listId: string): Promise<void> => {
                     console.log(`[ListStore] removeDuplicatesAPI for ID: ${listId}`);
-                    set(state => ({ isLoadingCurrentList: state.currentList?._id === listId, isLoadingLists: state.currentList?._id !== listId }));
+                    set((state: any) => ({ isLoadingCurrentList: state.currentList?._id === listId, isLoadingLists: state.currentList?._id !== listId }));
                     try {
                         const result = await api<{ message: string, list: List }>(`/lists/${listId}/remove-duplicates`, { method: 'POST' });
                         if (result.list) {
-                            set(state => ({
-                                lists: state.lists.map(l => l._id === listId ? result.list : l),
+                            set((state: any) => ({
+                                lists: state.lists.map((l: any) => l._id === listId ? result.list : l),
                                 currentList: state.currentList?._id === listId ? result.list : state.currentList,
                             }));
                             toast.success(result.message || "Duplicates removed");
@@ -231,8 +231,8 @@ export const useListStore = create(
                     try {
                         const result = await api<{ message: string, list: List }>(`/lists/${listId}/share/${userIdToRemove}`, { method: 'DELETE' });
                         if (result.list) {
-                            set(state => {
-                                const listIndex = state.lists.findIndex(l => l._id === listId);
+                            set((state: any) => {
+                                const listIndex = state.lists.findIndex((l: any) => l._id === listId);
                                 if(listIndex > -1) state.lists[listIndex] = result.list;
                                 if (state.currentList?._id === listId) state.currentList = result.list;
                             });
