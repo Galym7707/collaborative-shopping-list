@@ -7,18 +7,35 @@ import { useTranslation } from 'react-i18next';
 import { useListStore } from '../store/listStore'; // для дисконнекта и очистки стейта
 
 // --- Типы ---
-export interface User {
+export interface UserInfo {
   _id: string;
   username: string;
   email: string;
 }
+
+export interface SharedWithEntry {
+  user: UserInfo;
+  role: 'viewer' | 'editor';
+  status: 'pending' | 'accepted' | 'declined';
+}
+
+export interface List {
+  _id: string;
+  name: string;
+  owner: UserInfo;
+  items: Item[];
+  sharedWith: SharedWithEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AuthResponse {
   token: string;
-  user: User;
+  user: UserInfo;
   message?: string;
 }
 interface AuthContextType {
-  user: User | null;
+  user: UserInfo | null;
   token: string | null;
   loading: boolean;
   isLoggingIn: boolean;
@@ -32,7 +49,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
