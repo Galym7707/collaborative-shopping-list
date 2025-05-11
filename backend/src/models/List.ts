@@ -1,67 +1,54 @@
-import { Schema, model, Types, Document } from 'mongoose';
-import { v4 as uuid } from 'uuid';
+// File: C:\Users\galym\Desktop\ShopSmart\backend\src\models\List.ts
+import mongoose, { Document, Schema } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
+// import { IUser } from './User'; // IUser не используется напрямую в IListItem или IList
 
-/* ───────────── Item ───────────── */
-export interface IItem {
-  _id         : string; // UUID
-  name        : string;
-  quantity    : number;
-  unit        : string;
-  pricePerUnit: number | undefined;
-  totalCost   : number | undefined;
-  category    : string;
-  isBought    : boolean;
-  boughtBy    : Types.ObjectId[];
+// Интерфейс для элементов списка
+export interface IListItem { // Убрал extends Document, т.к. это sub-schema
+  _id: string;
+  name: string;
+  isBought: boolean;
+  quantity?: number; // Опционально
+  unit?: string;     // Опционально
+  category?: string; // Опционально
+  boughtBy?: mongoose.Types.ObjectId[]; // Опционально, для "кто купит"
 }
 
-const ListItemSchema = new Schema<IItem>({
-  _id         : { type: String, default: uuid },
-  name        : { type: String, required: true, trim: true },
-  quantity    : { type: Number, default: 1 },
-  unit        : { type: String, default: 'pcs' },
-  pricePerUnit: { type: Number },
-  totalCost   : { type: Number },
-  category    : { type: String, default: 'Без категории' },
-  isBought    : { type: Boolean, default: false },
-  boughtBy    : [{ type: Schema.Types.ObjectId, ref: 'User' }],
+// Схема для элементов списка
+const ListItemSchema: Schema = new Schema<IListItem>({
+  _id: { type: String, default: uuidv4 },
+  name: { type: String, required: true, trim: true },
+  isBought: { type: Boolean, default: false },
+  quantity: { type: Number, default: 1 },
+  unit: { type: String, default: '' },
+  category: { type: String, default: 'Uncategorized' },
+  boughtBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+}, { _id: false });
+
+
+// Интерфейс для документа списка
+export interface IList extends Document {
+  _id: string;
+  owner: mongoose.Types.ObjectId; // Ссылка на User
+  name: string;
+  items: mongoose.Types.DocumentArray<IListItem & mongoose.Document>; // Типизируем как DocumentArray
+  sharedWith: mongoose.Types.ObjectId[]; // Массив ID пользователей, с кем поделен
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Схема для списка
+const ListSchema: Schema = new Schema<IList>({
+  _id: { type: String, default: uuidv4 },
+  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  name: { type: String, required: true, trim: true },
+  items: [ListItemSchema], // Используем схему для subdocuments
+  sharedWith: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
+}, {
+  timestamps: true,
+  _id: false,
 });
 
-/* ───────────── Shared entry ───── */
-export interface ISharedWith {
-  user   : Types.ObjectId;
-  role   : 'viewer' | 'editor';
-  status : 'pending' | 'accepted' | 'declined';
-}
+ListSchema.index({ sharedWith: 1 });
 
-const SharedWithSchema = new Schema<ISharedWith>(
-  {
-    user  : { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    role  : { type: String, enum: ['viewer', 'editor'],   default: 'viewer'   },
-    status: { type: String, enum: ['pending','accepted','declined'],
-                                            default: 'pending' },
-  },
-  { _id: false }
-);
-
-/* ───────────── List ───────────── */
-export interface IList extends Document {
-  _id       : string;
-  owner     : Types.ObjectId;
-  name      : string;
-  items     : IItem[];
-  sharedWith: ISharedWith[];           // <-- новый тип
-}
-
-const ListSchema = new Schema<IList>(
-  {
-    _id  : { type: String, default: uuid },
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    name : { type: String, required: true },
-
-    items     : [ListItemSchema],
-    sharedWith: [SharedWithSchema],    // <-- вложенная под‑схема
-  },
-  { timestamps: true }
-);
-
-export default model<IList>('List', ListSchema);
+export default mongoose.model<IList>('List', ListSchema);
