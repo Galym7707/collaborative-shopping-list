@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import List, { IList, IListItem } from '../models/List'; // Убедись, что IListItem экспортируется
+import List, { IList, IListItem } from '../models/List'; // <-- ИСПРАВЛЕН ИМПОРТ
 import User from '../models/User';
 
 const ioOf = (req: Request) => (req as any).io;
@@ -15,7 +15,7 @@ export async function getAllLists(req: Request, res: Response, next: NextFunctio
         const userId = req.user._id;
         const lists = await List.find({ $or: [{ owner: userId }, { sharedWith: userId }] })
             .populate('owner', 'username email _id')
-            .populate('sharedWith', 'username email _id') // Теперь это будет массив User-объектов
+            .populate('sharedWith', 'username email _id')
             .sort({ updatedAt: -1 })
             .lean();
         res.json(lists);
@@ -29,13 +29,13 @@ export async function createList(req: Request, res: Response, next: NextFunction
         const { name } = req.body;
         if (!req.user?._id) { return res.status(401).json({ message: 'User not authenticated' }); }
         if (!name || typeof name !== 'string' || name.trim().length === 0) { return res.status(400).json({ message: 'List name required' });}
-        
+
         const newList = new List({ _id: uuidv4(), name: name.trim(), owner: req.user._id, items: [], sharedWith: [] });
         await newList.save();
         console.log(`[API] POST /api/lists - List ${newList._id} saved`);
         const populatedList = await List.findById(newList._id).populate('owner', 'username email _id').lean();
         if (!populatedList) { return next(new Error('Failed to retrieve list after saving')); }
-        
+
         const io = ioOf(req);
         if (io && req.user) {
             io.to(`user_${req.user._id}`).emit('listCreated', populatedList);
@@ -68,23 +68,25 @@ export async function addItem(req: Request, res: Response, next: NextFunction) {
         const list = await List.findById(listId);
         if (!list) { return res.status(404).json({ message: 'List not found' }); }
 
-        const newItem: IListItem = {
+        const newItemData: IListItem = { // Явно используем IListItem
             _id: uuidv4(),
             name: name.trim(),
             isBought: false,
-            quantity: quantity, // Добавляем, если есть в IListItem
-            unit: unit,         // Добавляем, если есть в IListItem
-            category: category, // Добавляем, если есть в IListItem
-        } as IListItem; // Приведение типа, если IListItem имеет больше полей
+            quantity: quantity,
+            unit: unit,
+            category: category,
+            // boughtBy: [] // Раскомментируй, если это поле есть в IListItem
+        };
 
-        list.items.push(newItem);
+        list.items.push(newItemData); // Mongoose должен справиться с простым объектом, если схема типизирована
         await list.save();
-        
-        const addedItem = list.items.find(i => i._id === newItem._id); // Находим добавленный элемент
-        
+
+        // Находим добавленный элемент в массиве после сохранения, чтобы он был Mongoose subdocument
+        const addedItem = list.items.find(i => i._id === newItemData._id);
+
         const io = ioOf(req);
-        if (io && addedItem) { io.to(`list_${listId}`).emit('itemAdded', { listId, item: addedItem }); }
-        res.status(201).json(addedItem);
+        if (io && addedItem) { io.to(`list_${listId}`).emit('itemAdded', { listId, item: addedItem.toObject ? addedItem.toObject() : addedItem }); }
+        res.status(201).json(addedItem ? (addedItem.toObject ? addedItem.toObject() : addedItem) : newItemData);
     } catch (err) { console.error(`[API] POST /api/lists/${listId}/items - Error:`, err); next(err); }
 }
 
@@ -107,12 +109,12 @@ export async function updateItem(req: Request, res: Response, next: NextFunction
         if (typeof unit === 'string' && item.unit !== unit) { item.unit = unit; updated = true; }
         if (typeof category === 'string' && item.category !== category) { item.category = category; updated = true; }
 
-        if (!updated) { return res.json(item); }
+        if (!updated) { return res.json(item.toObject ? item.toObject() : item); }
         await list.save();
-        
+
         const io = ioOf(req);
-        if (io) { io.to(`list_${listId}`).emit('itemUpdated', { listId, item: item }); }
-        res.json(item);
+        if (io) { io.to(`list_${listId}`).emit('itemUpdated', { listId, item: item.toObject ? item.toObject() : item }); }
+        res.json(item.toObject ? item.toObject() : item);
     } catch (err) { console.error(`[API] PATCH /api/lists/${listId}/items/${itemId} - Error:`, err); next(err); }
 }
 
@@ -124,7 +126,7 @@ export async function deleteItem(req: Request, res: Response, next: NextFunction
         const result = await List.updateOne({ _id: listId }, { $pull: { items: { _id: itemId } } });
         if (result.matchedCount === 0) { return res.status(404).json({ message: 'List not found' }); }
         if (result.modifiedCount === 0) { return res.status(404).json({ message: 'Item not found in list' });}
-        
+
         const io = ioOf(req);
         if (io) { io.to(`list_${listId}`).emit('itemDeleted', { listId, itemId }); }
         res.status(200).json({ message: 'Item deleted successfully', itemId });
@@ -152,10 +154,10 @@ export async function deleteList(req: Request, res: Response, next: NextFunction
     } catch (err) { console.error(`[API] DELETE /api/lists/${listId} - Error:`, err); next(err); }
 }
 
-// --- POST /api/lists/:id/share ---
+// --- POST /api/lists/:id/share (УПРОЩЕННЫЙ) ---
 export async function shareList(req: Request, res: Response, next: NextFunction) {
     const listId = req.params.id;
-    const { email } = req.body; // Убрали role для упрощения
+    const { email } = req.body;
     console.log(`[API] POST /api/lists/${listId}/share - Inviting user ${email}`);
     try {
         const ownerId = req.user?._id;
@@ -169,26 +171,20 @@ export async function shareList(req: Request, res: Response, next: NextFunction)
         const userToInvite = await User.findOne({ email: email.toLowerCase().trim() });
         if (!userToInvite) { return res.status(404).json({ message: 'User with this email not found' }); }
         if (userToInvite._id.equals(ownerId)) { return res.status(400).json({ message: 'Cannot share list with yourself' });}
-        
-        // Проверяем, что userToInvite._id существует перед вызовом equals
-        if (userToInvite._id && list.sharedWith.some(id => id.equals(userToInvite._id))) {
+
+        if (userToInvite._id && list.sharedWith.some(id => id.equals(userToInvite!._id))) { // Добавил ! к userToInvite
              return res.status(400).json({ message: 'List already shared with this user' });
         }
 
-        if (userToInvite._id) { // Дополнительная проверка
+        if (userToInvite._id) {
             list.sharedWith.push(userToInvite._id as mongoose.Types.ObjectId);
             await list.save();
-        } else {
-            return res.status(404).json({ message: 'User to invite has no ID.' }); // Маловероятно
-        }
+        } else { return res.status(404).json({ message: 'User to invite has no ID.' }); }
 
-        const populatedList = await List.findById(listId)
-            .populate('owner', 'username email _id')
-            .populate('sharedWith', 'username email _id') // Теперь sharedWith это массив User
-            .lean();
-        
+        const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
+
         const io = ioOf(req);
-        if (io && populatedList && userToInvite?._id) { // Проверяем userToInvite._id
+        if (io && populatedList && userToInvite?._id) {
             io.to(`list_${listId}`).emit('listUpdate', populatedList);
             io.to(`user_${userToInvite._id}`).emit('listSharedWithYou', populatedList);
         }
@@ -196,7 +192,7 @@ export async function shareList(req: Request, res: Response, next: NextFunction)
     } catch (error) { console.error(`[API] POST /api/lists/${listId}/share - Error:`, error); next(error); }
 }
 
-// --- DELETE /api/lists/:id/share/:userId ---
+// --- DELETE /api/lists/:id/share/:userId (УПРОЩЕННЫЙ) ---
 export async function removeUserAccess(req: Request, res: Response, next: NextFunction) {
     const { id: listId, userId: userIdToRemove } = req.params;
     console.log(`[API] DELETE /api/lists/${listId}/share/${userIdToRemove} - Removing access`);
@@ -228,28 +224,52 @@ export async function removeUserAccess(req: Request, res: Response, next: NextFu
 
 // --- POST /api/lists/:id/remove-duplicates ---
 export async function removeDuplicates(req: Request, res: Response, next: NextFunction) {
-    // ... (код с логами, без изменений в логике) ...
+    const listId = req.params.id;
+    console.log(`[API] POST /api/lists/${listId}/remove-duplicates - Request received`);
+    try {
+        const list = await List.findById(listId);
+        if (!list) { return res.status(404).json({ message: 'List not found' }); }
+
+        const uniqueItemsMap: Map<string, IListItem> = new Map();
+        list.items.forEach(item => {
+            const lowerCaseName = item.name.toLowerCase().trim();
+            if (!uniqueItemsMap.has(lowerCaseName)) {
+                uniqueItemsMap.set(lowerCaseName, item);
+            } else {
+                const existingItem = uniqueItemsMap.get(lowerCaseName)!;
+                if (item.isBought) existingItem.isBought = true;
+                uniqueItemsMap.set(lowerCaseName, existingItem);
+            }
+        });
+        const newItemsArray = Array.from(uniqueItemsMap.values());
+        const removedCount = list.items.length - newItemsArray.length;
+
+        if (removedCount > 0) {
+            list.items = newItemsArray as mongoose.Types.DocumentArray<IListItem & mongoose.Document>; // Приводим к типу Mongoose
+            await list.save();
+            const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
+            const io = ioOf(req);
+            if (io) io.to(`list_${listId}`).emit('listUpdate', populatedList);
+            res.status(200).json({ message: `${removedCount} duplicate item(s) removed.`, list: populatedList });
+        } else {
+            const currentPopulatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
+            res.status(200).json({ message: 'No duplicates found.', list: currentPopulatedList });
+        }
+    } catch (error) { console.error(`[API] POST /api/lists/${listId}/remove-duplicates - Error:`, error); next(error); }
 }
 
-// --- ЗАГЛУШКИ ДЛЯ НОВЫХ ФУНКЦИЙ ИЗ ТВОЕГО listRoutes.ts ---
-export async function respondToInvite(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Respond to invite: Not Implemented Yet' });
-}
-export async function changeRole(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Change role: Not Implemented Yet' });
-}
+// --- ЗАГЛУШКИ ---
+export async function respondToInvite(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'RespondToInvite NI' }); }
+export async function changeRole(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'ChangeRole NI' }); }
 export async function toggleBought(req: Request, res: Response, next: NextFunction) {
     const { id: listId, itemId } = req.params;
     try {
         const list = await List.findById(listId);
         if (!list) return res.status(404).json({ message: "List not found" });
-        const item = list.items.find(i => i._id === itemId);
+        const item = list.items.find(i => i._id === itemId); // Используем find
         if (!item) return res.status(404).json({ message: "Item not found" });
-        
-        req.body = { isBought: !item.isBought }; // Устанавливаем тело для updateItem
+        req.body = { isBought: !item.isBought };
         return updateItem(req, res, next);
     } catch (err) { next(err); }
 }
-export async function getInvitations(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Get invitations: Not Implemented Yet' });
-}
+export async function getInvitations(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'GetInvitations NI' }); }

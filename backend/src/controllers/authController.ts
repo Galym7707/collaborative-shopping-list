@@ -4,23 +4,26 @@ import jwt, { SignOptions, Secret } from 'jsonwebtoken'; // Импортируе
 import bcrypt from 'bcrypt';
 import User, { IUser } from '../models/User';
 
-const EXPIRES_IN_STRING = process.env.JWT_EXPIRES_IN || '365d'; // Переименовал, чтобы не конфликтовать с типом
+// Устанавливаем срок жизни токена в секундах (например, 7 дней)
+const JWT_EXPIRATION_SECONDS = process.env.JWT_EXPIRES_IN_SECONDS
+    ? parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10)
+    : 7 * 24 * 60 * 60; // 7 дней по умолчанию
 
 function signToken(id: string, email: string, username: string): string {
-  const secret: Secret = process.env.JWT_SECRET!; // <-- Используем non-null assertion и явно типизируем
+  const secret: Secret = process.env.JWT_SECRET!;
   if (!secret) {
-      // Эта проверка здесь больше для полноты, т.к. мы проверяем на старте сервера
       console.error('FATAL ERROR inside signToken: JWT_SECRET is not set');
       throw new Error('Server configuration error: JWT_SECRET missing during token signing');
   }
 
   const payload = { id, email, username };
-  const options: SignOptions = { expiresIn: EXPIRES_IN_STRING };
+  // Опции для jwt.sign, expiresIn теперь число
+  const options: SignOptions = { expiresIn: JWT_EXPIRATION_SECONDS };
 
   return jwt.sign(payload, secret, options);
 }
 
-// ... остальной код register и login без изменений ...
+// POST /api/auth/register
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { username, email, password } = req.body;
@@ -41,6 +44,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
   } catch (err) { console.error("Registration Error:", err); next(err); }
 }
 
+// POST /api/auth/login
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;
