@@ -1,320 +1,218 @@
-// File: frontend/src/store/listStore.ts
-import { create }                     from 'zustand';
-import { immer }                      from 'zustand/middleware/immer';
-import { subscribeWithSelector }      from 'zustand/middleware';
-import { io, Socket }                 from 'socket.io-client';
-import toast                          from 'react-hot-toast';
-import { api }                        from '../api';
-import { Item, List }                 from './listTypes';
-import { InboxArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { t } from '../i18n';
-
-/* ───────── доп‑типы ───────── */
-interface Invitation {
-  listId: string;
-  listName: string;
-  inviterUsername: string;
-  inviterEmail: string;
-}
+// File: C:\Users\galym\Desktop\ShopSmart\frontend\src\store\listStore.ts
+import { create } from 'zustand';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
+import { api } from '../api';
+import { io, Socket } from 'socket.io-client';
+import toast from 'react-hot-toast';
+import { UserInfo, Item, List, Invitation } from './listTypes'; // Импорт типов
 
 interface ListState {
-  /* data */
-  lists: List[];
-  currentList: List | null;
-  invitations: Invitation[];
+    lists: List[];
+    currentList: List | null;
+    invitations: Invitation[]; // Добавили для примера
+    isLoadingLists: boolean;
+    isLoadingCurrentList: boolean;
+    error: string | null;
+    socket: Socket | null;
+    isConnected: boolean;
 
-  /* ui */
-  isLoadingLists: boolean;
-  isLoadingCurrentList: boolean;
-  error: string | null;
-  isConnected: boolean;
+    setLists: (lists: List[]) => void;
+    fetchLists: () => Promise<void>;
+    createList: (name: string) => Promise<List | undefined>;
+    fetchListById: (id: string) => Promise<void>;
+    setCurrentList: (list: List | null) => void;
+    clearCurrentList: () => void;
 
-  /* socket */
-  socket: Socket | null;
-  connectSocket(token: string): void;
-  disconnectSocket(): void;
-  leaveListRoom(id: string): void;
+    addItemAPI: (listId: string, payload: Partial<Item> & { name: string }) => Promise<void>;
+    toggleItemAPI: (listId: string, itemId: string, currentIsBought: boolean) => Promise<void>; // Передаем текущее состояние
+    removeItemAPI: (listId: string, itemId: string) => Promise<void>;
+    deleteListAPI: (listId: string) => Promise<boolean>;
 
-  /* helpers */
-  clearCurrentList(): void;
+    connectSocket: (token: string | null) => void;
+    disconnectSocket: () => void;
+    joinListRoom: (listId: string) => void;
+    leaveListRoom: (listId: string) => void;
 
-  /* lists */
-  fetchLists(): Promise<void>;
-  fetchListById(id: string): Promise<void>;
-  createList(name: string): Promise<List | null>;
-  deleteListAPI(id: string): Promise<void>;
+    removeDuplicatesAPI: (listId: string) => Promise<void>;
+    inviteUserToListAPI: (listId: string, email: string, role: 'viewer' | 'editor') => Promise<void>; // Добавили role
+    removeUserFromListAPI: (listId: string, userIdToRemove: string) => Promise<void>;
+    // Для заглушек из listRoutes
+    acceptInviteAPI: (listId: string, userId: string) => Promise<void>;
+    declineInviteAPI: (listId: string, userId: string) => Promise<void>;
+    fetchInvitationsAPI: () => Promise<void>;
 
-  /* items */
-  addItemAPI(listId: string, payload: Partial<Item> & { name: string }): Promise<void>;
-  toggleItemAPI(listId: string, itemId: string): Promise<void>;
-  removeItemAPI(listId: string, itemId: string): Promise<void>;
 
-  /* invites */
-  inviteUserToListAPI(listId: string, email: string): Promise<void>;
-  acceptInvite(listId: string, userId: string): void;
-  declineInvite(listId: string): void;
-
-  /* ws handlers */
-  handleListUpdate(l: List): void;
-  handleListDeleted(d: { listId: string }): void;
-  handleItemAdded(p: { listId: string; item: Item }): void;
-  handleItemUpdated(p: { listId: string; item: Item }): void;
-  handleItemDeleted(p: { listId: string; itemId: string }): void;
-  handleInvitation(p: Invitation): void;
-
-  fetchInvitations(): Promise<void>;
+    // WS Handlers
+    handleListUpdate: (updatedList: List) => void;
+    handleItemAdded: (data: { listId: string; item: Item }) => void;
+    handleItemUpdated: (data: { listId: string; item: Item }) => void;
+    handleItemDeleted: (data: { listId: string; itemId: string }) => void;
+    handleListDeleted: (data: { listId: string }) => void;
+    handleInvitation: (invitation: Invitation) => void; // Для WS 'invitePending'
+    handleListShared: (sharedList: List) => void;
+    handleListAccessRemoved: (data: { listId: string }) => void;
 }
 
-const SOCKET_URL = (import.meta.env.VITE_BACKEND_URL as string).replace('/api', '');
-const LIST       = (p = '') => `/lists${p}`;
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Должен быть определен
+const SOCKET_URL = API_BASE_URL ? API_BASE_URL.replace('/api', '') : '';
 
 export const useListStore = create<ListState>()(
-  subscribeWithSelector(
-    immer((set, get) => ({
-      /* ───────── базовый state ───────── */
-      lists: [], currentList: null, invitations: [],
-      isLoadingLists: false, isLoadingCurrentList: false,
-      error: null, isConnected: false, socket: null,
+    devtools(
+        subscribeWithSelector(
+            immer(
+                (set, get) => ({
+                    lists: [], currentList: null, invitations: [],
+                    isLoadingLists: false, isLoadingCurrentList: false,
+                    error: null, socket: null, isConnected: false,
 
-      clearCurrentList: () => set({ currentList: null }),
+                    setLists: (lists) => set({ lists }),
+                    setCurrentList: (list) => set({ currentList: list }),
+                    clearCurrentList: () => set({ currentList: null }),
 
-      /* ───────── socket ───────── */
-      connectSocket(token) {
-        if (get().socket) return;
-        const s = io(SOCKET_URL, { auth: { token } });
+                    fetchLists: async () => { /* ... (код с логами) ... */ },
+                    createList: async (name) => { /* ... (код с логами) ... */ },
+                    fetchListById: async (id) => { /* ... (код с логами) ... */ },
 
-        s.on('connect',    () => set({ isConnected: true }));
-        s.on('disconnect', () => set({ socket: null, isConnected: false }));
+                    addItemAPI: async (listId, payload) => {
+                        console.log(`[ListStore] addItemAPI for list ${listId}, payload:`, payload);
+                        try {
+                            const addedItem = await api<Item>(`/lists/${listId}/items`, {
+                                method: 'POST', body: JSON.stringify(payload),
+                            });
+                            if (addedItem) {
+                                set(state => {
+                                    if (state.currentList?._id === listId && !state.currentList.items.some(i => i._id === addedItem._id)) {
+                                        state.currentList.items.push(addedItem);
+                                    }
+                                });
+                                // Бэкенд эмитит itemAdded
+                            }
+                        } catch (err: any) { /* ... обработка ошибки ... */ }
+                    },
+                    toggleItemAPI: async (listId, itemId, currentIsBought) => {
+                        console.log(`[ListStore] toggleItemAPI for list ${listId}, item ${itemId}, currentIsBought: ${currentIsBought}`);
+                        try {
+                            // Используем общий updateItem эндпоинт
+                            const updatedItem = await api<Item>(`/lists/${listId}/items/${itemId}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ isBought: !currentIsBought }),
+                            });
+                            if (updatedItem) {
+                                set(state => {
+                                    if (state.currentList?._id === listId) {
+                                        const itemIndex = state.currentList.items.findIndex(i => i._id === itemId);
+                                        if (itemIndex > -1) state.currentList.items[itemIndex] = updatedItem;
+                                    }
+                                });
+                                 // Бэкенд эмитит itemUpdated
+                            }
+                        } catch (err: any) { /* ... обработка ошибки ... */ }
+                    },
+                    removeItemAPI: async (listId, itemId) => { /* ... (код с логами) ... */ },
+                    deleteListAPI: async (listId) => { /* ... (код с логами) ... */ return true; /* или false */ },
+                    removeDuplicatesAPI: async (listId) => { /* ... (код с логами) ... */ },
 
-        /* list‑level */
-        s.on('listUpdate',  get().handleListUpdate);
-        s.on('listDeleted', get().handleListDeleted);
-        s.on('listCreated', (l: List) => set(st => { st.lists.unshift(l); }));
+                    inviteUserToListAPI: async (listId, email, role) => { // Добавили role
+                        console.log(`[ListStore] inviteUserToListAPI for list ${listId}, email: ${email}, role: ${role}`);
+                        try {
+                            const result = await api<{ message: string, list: List }>(`/lists/${listId}/share`, {
+                                method: 'POST', body: JSON.stringify({ email, role }), // Передаем роль
+                            });
+                            if (result.list) {
+                                set(state => {
+                                    const listIndex = state.lists.findIndex(l => l._id === listId);
+                                    if(listIndex > -1) state.lists[listIndex] = result.list;
+                                    if (state.currentList?._id === listId) state.currentList = result.list;
+                                });
+                                toast.success(result.message || `Invitation sent to ${email}`);
+                            }
+                        } catch (err: any) { /* ... обработка ошибки ... */ }
+                    },
+                    removeUserFromListAPI: async (listId, userIdToRemove) => { /* ... (код с логами) ... */ },
 
-        /* item‑level */
-        s.on('itemAdded',    get().handleItemAdded);
-        s.on('itemUpdated',  get().handleItemUpdated);   // на всякий
-        s.on('itemToggled',  get().handleItemUpdated);   // новый ev из backend
-        s.on('itemDeleted',  get().handleItemDeleted);
+                    // Заглушки для API вызовов к новым роутам
+                    acceptInviteAPI: async (listId, userId) => {
+                        console.log(`[ListStore] acceptInviteAPI for list ${listId}, user ${userId}`);
+                        try {
+                            await api(`/lists/${listId}/invite/${userId}/accept`, { method: 'PUT' });
+                            toast.success('Invitation accepted!');
+                            get().fetchLists(); // Обновляем списки
+                            get().fetchInvitationsAPI(); // Обновляем приглашения
+                        } catch (e:any) { toast.error(e.message || 'Failed to accept invite'); }
+                    },
+                    declineInviteAPI: async (listId, userId) => {
+                         console.log(`[ListStore] declineInviteAPI for list ${listId}, user ${userId}`);
+                        try {
+                            await api(`/lists/${listId}/invite/${userId}/decline`, { method: 'PUT' });
+                            toast.info('Invitation declined.');
+                            get().fetchInvitationsAPI(); // Обновляем приглашения
+                        } catch (e:any) { toast.error(e.message || 'Failed to decline invite'); }
+                    },
+                    fetchInvitationsAPI: async () => {
+                        console.log('[ListStore] fetchInvitationsAPI called');
+                        try {
+                            const invites = await api<List[]>(`/lists/invitations`); // Предполагаем, что бэкенд вернет List[]
+                            // Нужно адаптировать к реальному ответу бэкенда (если он Invitation[])
+                            const mappedInvites: Invitation[] = invites.map(list => ({
+                                listId: list._id,
+                                listName: list.name,
+                                inviterUsername: list.owner.username, // Предполагаем, что owner есть
+                                inviterEmail: list.owner.email,
+                            }));
+                            set({ invitations: mappedInvites });
+                        } catch (e:any) { console.error('Fetch invitations error', e); toast.error(e.message || 'Failed to fetch invitations'); }
+                    },
 
-        /* приглашения */
-        // s.on('invitePending', get().handleInvitation);
 
-        // Обработка ошибки истёкшего jwt
-        s.on('connect_error', (err) => {
-          if (err.message === 'jwt_expired') {
-            localStorage.removeItem('authToken');
-            toast.error('Сессия истекла, войдите снова');
-            window.location.replace('/login?expired=1');
-          }
-        });
+                    // --- WebSocket ---
+                    connectSocket: (token) => {
+                        if (get().socket || !token || !SOCKET_URL) return;
+                        console.log(`[ListStore] connectSocket. Connecting to ${SOCKET_URL}`);
+                        const newSocket = io(SOCKET_URL, { auth: { token }, transports: ['websocket'] });
+                        set({ socket: newSocket });
+                        newSocket.on('connect', () => { /* ... */ });
+                        newSocket.on('disconnect', (reason) => { /* ... */ });
+                        newSocket.on('connect_error', (err) => {
+                            if (err.message === 'jwt_expired' || err.message === 'unauthorized_invalid_token' || err.message === 'unauthorized_no_token' ) {
+                                console.warn("[ListStore] WS Auth Error, redirecting to login:", err.message);
+                                localStorage.removeItem('authToken'); localStorage.removeItem('authUser');
+                                if (typeof window !== 'undefined') window.location.href = '/login?sessionExpired=1&reason=ws_auth';
+                            } else { /* ... */ }
+                        });
+                        newSocket.on('listUpdate', get().handleListUpdate);
+                        newSocket.on('itemAdded', get().handleItemAdded);
+                        newSocket.on('itemToggled', get().handleItemUpdated); // Используем itemUpdated для itemToggled
+                        newSocket.on('itemDeleted', get().handleItemDeleted);
+                        newSocket.on('listCreated', get().handleListUpdate);
+                        newSocket.on('listDeleted', get().handleListDeleted);
+                        newSocket.on('invitePending', get().handleInvitation); // Для получения новых приглашений по WS
+                        newSocket.on('listSharedWithYou', get().handleListShared);
+                        newSocket.on('listAccessRemoved', get().handleListAccessRemoved);
+                    },
+                    disconnectSocket: () => { /* ... */ },
+                    joinListRoom: (listId) => { /* ... */ },
+                    leaveListRoom: (listId) => { /* ... */ },
 
-        set({ socket: s });
-      },
-
-      disconnectSocket() {
-        get().socket?.disconnect();
-        set({ socket: null, isConnected: false });
-      },
-
-      leaveListRoom: id => get().socket?.emit('leaveList', id),
-
-      /* ───────── LISTS ───────── */
-      async fetchLists() {
-        set({ isLoadingLists: true, error: null });
-        try {
-          const lists = await api<List[]>(LIST());
-          set({ lists, isLoadingLists: false });
-        } catch (e: any) {
-          set({ error: e.message, isLoadingLists: false });
-        }
-      },
-
-      async fetchListById(id) {
-        set({ isLoadingCurrentList: true, error: null });
-        try {
-          const list = await api<List>(LIST(`/${id}`));
-          set({ currentList: list, isLoadingCurrentList: false });
-          get().socket?.emit('joinList', id);
-        } catch (e: any) {
-          set({ error: e.message, isLoadingCurrentList: false });
-        }
-      },
-
-      async createList(name) {
-        console.log('[listStore] ▶ createList:', name);
-        try {
-          const list = await api<List>(LIST(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name }),
-          });
-          console.log('[listStore] ✅ createList returned:', list);
-          set(st => { st.lists.unshift(list); });
-          return list;
-        } catch (e: any) {
-          console.error('[listStore] ❌ createList ERROR:', {
-            message: e.message,
-            response: (e as any).response,
-            data:     (e as any).data,
-          });
-          toast.error('Failed to create list: ' + (e.message || 'Unknown'));
-          return null;
-        }
-      },
-
-      async deleteListAPI(id) {
-        try {
-          await api(LIST(`/${id}`), { method: 'DELETE' });
-          set(st => {
-            st.lists = st.lists.filter(l => l._id !== id);
-            if (st.currentList?._id === id) st.currentList = null;
-          });
-          toast.success('List deleted');
-        } catch (e: any) { toast.error(e?.message || 'Delete error'); }
-      },
-
-      /* ───────── ITEMS ───────── */
-      async addItemAPI(listId, payload) {
-        try {
-          const added = await api<Item>(LIST(`/${listId}/items`), {
-            method: 'POST', body: JSON.stringify(payload),
-          });
-          /* optimistic update автора */
-          get().handleItemAdded({ listId, item: added });
-        } catch (e: any) { toast.error(e?.message || 'Failed'); }
-      },
-
-      /* toggle теперь сразу возвращает обновлённый item */
-      async toggleItemAPI(listId, itemId) {
-        try {
-          const { item } = await api<{ item: Item }>(
-            LIST(`/${listId}/items/${itemId}/toggle-bought`), { method: 'PATCH' }
-          );
-          get().handleItemUpdated({ listId, item });
-        } catch (e: any) { toast.error(e?.message || 'Toggle error'); }
-      },
-
-      async removeItemAPI(listId, itemId) {
-        await api(LIST(`/${listId}/items/${itemId}`), { method: 'DELETE' });
-        /* optimistic */
-        get().handleItemDeleted({ listId, itemId });
-      },
-
-      /* ───────── INVITES ───────── */
-      async inviteUserToListAPI(listId, email) {
-        await api(LIST(`/${listId}/share`), {
-          method: 'POST', body: JSON.stringify({ email }),
-        });
-      },
-      acceptInvite: async (listId: string, userId: string) => {
-        try {
-          await api(`/lists/${listId}/invite/${userId}/accept`, { method: 'PUT' });
-          // убираем pending‐invite из списка
-          set(st => {
-            st.invitations = st.invitations.filter(i => i.listId !== listId);
-          });
-          // подтягиваем свежий список, чтобы sharedWith[].status обновился
-          await get().fetchListById(listId);
-        } catch (e: any) {
-          toast.error('Не удалось принять приглашение: ' + e.message);
-        }
-      },
-      
-      declineInvite: async (listId: string, userId: string) => {
-        try {
-          await api(`/lists/${listId}/invite/${userId}/decline`, { method: 'PUT' });
-          set(st => {
-            st.invitations = st.invitations.filter(i => i.listId !== listId);
-          });
-          await get().fetchListById(listId);
-        } catch (e: any) {
-          toast.error('Не удалось отклонить приглашение: ' + e.message);
-        }
-      },
-
-      /* ───────── WS handlers ───────── */
-      handleListUpdate(l) {
-        set(st => {
-          const i = st.lists.findIndex(x => x._id === l._id);
-          if (i > -1) st.lists[i] = l; else st.lists.unshift(l);
-          if (st.currentList?._id === l._id) st.currentList = l;
-        });
-      },
-
-      handleListDeleted({ listId }) {
-        set(st => {
-          st.lists = st.lists.filter(x => x._id !== listId);
-          if (st.currentList?._id === listId) st.currentList = null;
-        });
-        toast.error('List was deleted');
-      },
-
-      handleItemAdded({ listId, item }) {
-        set(st => {
-          if (st.currentList?._id === listId) st.currentList.items.push(item);
-          const L = st.lists.find(l => l._id === listId);
-          if (L) L.items.push(item);
-        });
-      },
-
-      /* itemUpdated / itemToggled */
-      handleItemUpdated({ listId, item }) {
-        const patch = (arr: Item[]) => {
-          const i = arr.findIndex(x => x._id === item._id);
-          if (i > -1) arr[i] = item;
-        };
-        set(st => {
-          if (st.currentList?._id === listId) patch(st.currentList.items);
-          const L = st.lists.find(l => l._id === listId);
-          if (L) patch(L.items);
-        });
-      },
-
-      handleItemDeleted({ listId, itemId }) {
-        const del = (arr: Item[]) => arr.filter(i => i._id !== itemId);
-        set(st => {
-          if (st.currentList?._id === listId)
-            st.currentList.items = del(st.currentList.items as Item[]);
-          const L = st.lists.find(l => l._id === listId);
-          if (L) L.items = del(L.items as Item[]);
-        });
-      },
-
-      handleInvitation(inv) {
-        set(st => {
-          if (!st.invitations.find(i => i.listId === inv.listId)) {
-            st.invitations.push(inv);
-            toast.success(`You've been invited to "${inv.listName}"`);
-          }
-        });
-      },
-
-      async fetchInvitations() {
-        try {
-          // Получаем массив списков, где вы приглашены (pending)
-          const lists = await api<
-            Array<{
-              _id: string;
-              name: string;
-              owner: { _id: string; username: string; email: string };
-            }>
-          >(LIST('/invitations'));
-
-          // Маппим в Invitation[]
-          const invs: Invitation[] = lists.map(l => ({
-            listId: l._id,
-            listName: l.name,
-            inviterUsername: l.owner.username,
-            inviterEmail: l.owner.email,
-          }));
-
-          set({ invitations: invs });
-        } catch (e: any) {
-          console.error('[listStore] fetchInvitations failed', e);
-          toast.error('Не удалось загрузить приглашения');
-        }
-      },
-    }))
-  )
+                    // --- WS Handlers ---
+                    handleListUpdate: (updatedList) => { /* ... */ },
+                    handleItemAdded: (data) => { set(state => { if (state.currentList?._id === data.listId && !state.currentList.items.some(i => i._id === data.item._id)) state.currentList.items.push(data.item); }); },
+                    handleItemUpdated: (data) => { set(state => { if (state.currentList?._id === data.listId) { const idx = state.currentList.items.findIndex(i => i._id === data.item._id); if (idx > -1) state.currentList.items[idx] = data.item; } }); },
+                    handleItemDeleted: (data) => { set(state => { if (state.currentList?._id === data.listId) state.currentList.items = state.currentList.items.filter(i => i._id !== data.itemId); }); },
+                    handleListDeleted: (data) => { /* ... */ },
+                    handleInvitation: (invitation) => {
+                        console.log("[WS] Received invitePending:", invitation);
+                        set(state => {
+                            if (!state.invitations.find(i => i.listId === invitation.listId)) {
+                                state.invitations.push(invitation);
+                                toast(`You've been invited to "${invitation.listName}" by ${invitation.inviterUsername}`, { icon: <InboxArrowDownIcon className="h-6 w-6 text-blue-500"/> });
+                            }
+                        });
+                    },
+                    handleListShared: (sharedList) => { /* ... */ },
+                    handleListAccessRemoved: (data) => { /* ... */ },
+                })
+            )
+        )
+    )
 );

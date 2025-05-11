@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import List, { IList, IListItem } from '../models/List'; // <-- ИСПРАВЛЕН ИМПОРТ
+import List, { IList, IListItem } from '../models/List'; // Убедись, что IListItem экспортируется
 import User from '../models/User';
 
 const ioOf = (req: Request) => (req as any).io;
@@ -15,9 +15,10 @@ export async function getAllLists(req: Request, res: Response, next: NextFunctio
         const userId = req.user._id;
         const lists = await List.find({ $or: [{ owner: userId }, { sharedWith: userId }] })
             .populate('owner', 'username email _id')
-            .populate('sharedWith', 'username email _id')
+            .populate('sharedWith', 'username email _id') // Populate sharedWith as users
             .sort({ updatedAt: -1 })
             .lean();
+        console.log(`[API] GET /api/lists - Found ${lists.length} lists for user ${userId}`);
         res.json(lists);
     } catch (err) { console.error("[API] GET /api/lists - Error:", err); next(err); }
 }
@@ -29,13 +30,13 @@ export async function createList(req: Request, res: Response, next: NextFunction
         const { name } = req.body;
         if (!req.user?._id) { return res.status(401).json({ message: 'User not authenticated' }); }
         if (!name || typeof name !== 'string' || name.trim().length === 0) { return res.status(400).json({ message: 'List name required' });}
-
+        
         const newList = new List({ _id: uuidv4(), name: name.trim(), owner: req.user._id, items: [], sharedWith: [] });
         await newList.save();
         console.log(`[API] POST /api/lists - List ${newList._id} saved`);
         const populatedList = await List.findById(newList._id).populate('owner', 'username email _id').lean();
         if (!populatedList) { return next(new Error('Failed to retrieve list after saving')); }
-
+        
         const io = ioOf(req);
         if (io && req.user) {
             io.to(`user_${req.user._id}`).emit('listCreated', populatedList);
@@ -46,15 +47,20 @@ export async function createList(req: Request, res: Response, next: NextFunction
 
 // --- GET /api/lists/:id ---
 export async function getList(req: Request, res: Response, next: NextFunction) {
-    console.log(`[API] GET /api/lists/${req.params.id} - Request received`);
+    const listId = req.params.id;
+    console.log(`[API] GET /api/lists/${listId} - Request received`);
     try {
-        const list = await List.findById(req.params.id)
+        const list = await List.findById(listId)
             .populate('owner', 'username email _id')
             .populate('sharedWith', 'username email _id')
             .lean();
-        if (!list) { return res.status(404).json({ message: 'List not found' }); }
+        if (!list) {
+            console.log(`[API] GET /api/lists/${listId} - List not found`);
+            return res.status(404).json({ message: 'List not found' });
+        }
+        console.log(`[API] GET /api/lists/${listId} - List found, sending response`);
         res.json(list);
-    } catch (err) { console.error(`[API] GET /api/lists/${req.params.id} - Error:`, err); next(err); }
+    } catch (err) { console.error(`[API] GET /api/lists/${listId} - Error:`, err); next(err); }
 }
 
 // --- POST /api/lists/:id/items ---
@@ -62,28 +68,27 @@ export async function addItem(req: Request, res: Response, next: NextFunction) {
     const listId = req.params.id;
     console.log(`[API] POST /api/lists/${listId}/items - Request received. Body:`, req.body);
     try {
+        // Убираем pricePerUnit и totalCost, так как их нет в IListItem
         const { name, quantity = 1, unit = '', category = 'Uncategorized' } = req.body;
         if (!name || typeof name !== 'string' || name.trim().length === 0) { return res.status(400).json({ message: 'Item name required' });}
 
         const list = await List.findById(listId);
         if (!list) { return res.status(404).json({ message: 'List not found' }); }
 
-        const newItemData: IListItem = { // Явно используем IListItem
+        const newItemData: IListItem = {
             _id: uuidv4(),
             name: name.trim(),
             isBought: false,
             quantity: quantity,
             unit: unit,
             category: category,
-            // boughtBy: [] // Раскомментируй, если это поле есть в IListItem
         };
 
-        list.items.push(newItemData); // Mongoose должен справиться с простым объектом, если схема типизирована
+        list.items.push(newItemData);
         await list.save();
-
-        // Находим добавленный элемент в массиве после сохранения, чтобы он был Mongoose subdocument
+        
         const addedItem = list.items.find(i => i._id === newItemData._id);
-
+        
         const io = ioOf(req);
         if (io && addedItem) { io.to(`list_${listId}`).emit('itemAdded', { listId, item: addedItem.toObject ? addedItem.toObject() : addedItem }); }
         res.status(201).json(addedItem ? (addedItem.toObject ? addedItem.toObject() : addedItem) : newItemData);
@@ -95,11 +100,12 @@ export async function updateItem(req: Request, res: Response, next: NextFunction
     const { id: listId, itemId } = req.params;
     console.log(`[API] PATCH /api/lists/${listId}/items/${itemId} - Request received. Body:`, req.body);
     try {
+        // Убираем pricePerUnit и totalCost
         const { isBought, name, quantity, unit, category } = req.body;
         const list = await List.findById(listId);
         if (!list) { return res.status(404).json({ message: 'List not found' }); }
 
-        const item = list.items.find(i => i._id === itemId); // Используем find
+        const item = list.items.find(i => i._id === itemId);
         if (!item) { return res.status(404).json({ message: 'Item not found' }); }
 
         let updated = false;
@@ -111,7 +117,7 @@ export async function updateItem(req: Request, res: Response, next: NextFunction
 
         if (!updated) { return res.json(item.toObject ? item.toObject() : item); }
         await list.save();
-
+        
         const io = ioOf(req);
         if (io) { io.to(`list_${listId}`).emit('itemUpdated', { listId, item: item.toObject ? item.toObject() : item }); }
         res.json(item.toObject ? item.toObject() : item);
@@ -126,7 +132,7 @@ export async function deleteItem(req: Request, res: Response, next: NextFunction
         const result = await List.updateOne({ _id: listId }, { $pull: { items: { _id: itemId } } });
         if (result.matchedCount === 0) { return res.status(404).json({ message: 'List not found' }); }
         if (result.modifiedCount === 0) { return res.status(404).json({ message: 'Item not found in list' });}
-
+        
         const io = ioOf(req);
         if (io) { io.to(`list_${listId}`).emit('itemDeleted', { listId, itemId }); }
         res.status(200).json({ message: 'Item deleted successfully', itemId });
@@ -171,18 +177,20 @@ export async function shareList(req: Request, res: Response, next: NextFunction)
         const userToInvite = await User.findOne({ email: email.toLowerCase().trim() });
         if (!userToInvite) { return res.status(404).json({ message: 'User with this email not found' }); }
         if (userToInvite._id.equals(ownerId)) { return res.status(400).json({ message: 'Cannot share list with yourself' });}
-
-        if (userToInvite._id && list.sharedWith.some(id => id.equals(userToInvite!._id))) { // Добавил ! к userToInvite
+        
+        if (list.sharedWith.some(id => id.equals(userToInvite!._id))) { // Добавил ! для userToInvite (после проверки выше)
              return res.status(400).json({ message: 'List already shared with this user' });
         }
 
-        if (userToInvite._id) {
-            list.sharedWith.push(userToInvite._id as mongoose.Types.ObjectId);
-            await list.save();
-        } else { return res.status(404).json({ message: 'User to invite has no ID.' }); }
+        list.sharedWith.push(userToInvite._id as mongoose.Types.ObjectId);
+        await list.save();
+        console.log(`[API] POST /api/lists/${listId}/share - User ${email} added to sharedWith`);
 
-        const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
-
+        const populatedList = await List.findById(listId)
+            .populate('owner', 'username email _id')
+            .populate('sharedWith', 'username email _id')
+            .lean();
+        
         const io = ioOf(req);
         if (io && populatedList && userToInvite?._id) {
             io.to(`list_${listId}`).emit('listUpdate', populatedList);
@@ -245,11 +253,11 @@ export async function removeDuplicates(req: Request, res: Response, next: NextFu
         const removedCount = list.items.length - newItemsArray.length;
 
         if (removedCount > 0) {
-            list.items = newItemsArray as mongoose.Types.DocumentArray<IListItem & mongoose.Document>; // Приводим к типу Mongoose
+            list.items = newItemsArray as mongoose.Types.DocumentArray<IListItem & mongoose.Document>;
             await list.save();
             const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
             const io = ioOf(req);
-            if (io) io.to(`list_${listId}`).emit('listUpdate', populatedList);
+            if (io && populatedList) io.to(`list_${listId}`).emit('listUpdate', populatedList);
             res.status(200).json({ message: `${removedCount} duplicate item(s) removed.`, list: populatedList });
         } else {
             const currentPopulatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
@@ -258,18 +266,26 @@ export async function removeDuplicates(req: Request, res: Response, next: NextFu
     } catch (error) { console.error(`[API] POST /api/lists/${listId}/remove-duplicates - Error:`, error); next(error); }
 }
 
-// --- ЗАГЛУШКИ ---
-export async function respondToInvite(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'RespondToInvite NI' }); }
-export async function changeRole(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'ChangeRole NI' }); }
+// --- ЗАГЛУШКИ ДЛЯ НОВЫХ ФУНКЦИЙ ИЗ ТВОЕГО listRoutes.ts ---
+export async function respondToInvite(req: Request, res: Response, next: NextFunction) {
+    res.status(501).json({ message: 'Respond to invite: Not Implemented Yet' });
+}
+export async function changeRole(req: Request, res: Response, next: NextFunction) {
+    res.status(501).json({ message: 'Change role: Not Implemented Yet' });
+}
 export async function toggleBought(req: Request, res: Response, next: NextFunction) {
     const { id: listId, itemId } = req.params;
     try {
         const list = await List.findById(listId);
         if (!list) return res.status(404).json({ message: "List not found" });
-        const item = list.items.find(i => i._id === itemId); // Используем find
+        const item = list.items.find(i => i._id === itemId);
         if (!item) return res.status(404).json({ message: "Item not found" });
+        
+        // Передаем isBought в теле для updateItem
         req.body = { isBought: !item.isBought };
-        return updateItem(req, res, next);
+        return updateItem(req, res, next); // Вызываем существующий updateItem
     } catch (err) { next(err); }
 }
-export async function getInvitations(req: Request, res: Response, next: NextFunction) { res.status(501).json({ message: 'GetInvitations NI' }); }
+export async function getInvitations(req: Request, res: Response, next: NextFunction) {
+    res.status(501).json({ message: 'Get invitations: Not Implemented Yet' });
+}

@@ -1,10 +1,9 @@
 // File: C:\Users\galym\Desktop\ShopSmart\backend\src\controllers\authController.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt, { SignOptions, Secret } from 'jsonwebtoken'; // Импортируем типы
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User, { IUser } from '../models/User';
 
-// Устанавливаем срок жизни токена в секундах (например, 7 дней)
 const JWT_EXPIRATION_SECONDS = process.env.JWT_EXPIRES_IN_SECONDS
     ? parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10)
     : 7 * 24 * 60 * 60; // 7 дней по умолчанию
@@ -15,15 +14,11 @@ function signToken(id: string, email: string, username: string): string {
       console.error('FATAL ERROR inside signToken: JWT_SECRET is not set');
       throw new Error('Server configuration error: JWT_SECRET missing during token signing');
   }
-
   const payload = { id, email, username };
-  // Опции для jwt.sign, expiresIn теперь число
   const options: SignOptions = { expiresIn: JWT_EXPIRATION_SECONDS };
-
   return jwt.sign(payload, secret, options);
 }
 
-// POST /api/auth/register
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { username, email, password } = req.body;
@@ -44,7 +39,6 @@ export async function register(req: Request, res: Response, next: NextFunction) 
   } catch (err) { console.error("Registration Error:", err); next(err); }
 }
 
-// POST /api/auth/login
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;

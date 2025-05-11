@@ -7,7 +7,7 @@ import {
   addItem,
   updateItem,
   deleteItem,
-  shareList,       // Используем это имя для приглашения
+  shareList,
   deleteList,
   respondToInvite,
   changeRole,
@@ -15,7 +15,7 @@ import {
   removeUserAccess,
   getInvitations,
   removeDuplicates
-} from '../controllers/listController';
+} from '../controllers/listController'; // Все контроллеры импортируются отсюда
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -28,21 +28,20 @@ router.post('/', createList);
 // --- Маршруты для конкретного списка ---
 router.route('/:id')
   .get(getList)
-  .delete(deleteList); // Удаление самого списка
+  .delete(deleteList);
 
 // --- Маршруты для элементов внутри списка ---
-router.route('/:id/items')
-  .post(addItem); // Добавить элемент
+router.post('/:id/items', addItem); // POST для создания нового элемента
 
 router.route('/:id/items/:itemId')
-  .patch(updateItem) // Обновить элемент (включая isBought, name, etc.)
-  .delete(deleteItem); // Удалить элемент
+  .patch(updateItem) // PATCH для частичного обновления элемента
+  .delete(deleteItem); // DELETE для удаления элемента
 
-// Маршрут для toggleBought (если все еще нужен отдельно от updateItem)
+// Маршрут для toggleBought (если используется отдельно)
 router.patch('/:id/items/:itemId/toggle-bought', toggleBought);
 
 // --- Маршруты для шейринга ---
-router.post('/:id/share', shareList); // Пригласить пользователя (бывший inviteUser)
+router.post('/:id/share', shareList); // Пригласить пользователя
 router.delete('/:id/share/:userId', removeUserAccess); // Удалить доступ пользователя (userId - кого удаляем)
 
 // --- Маршруты для обработки приглашений (пока заглушки) ---
@@ -55,7 +54,7 @@ router.put ('/:id/invite/:userId/decline', respondToInvite);
 router.patch('/:id/role/:userId',  changeRole);
 
 // --- Маршрут для получения приглашений (пока заглушка) ---
-router.get('/invitations', getInvitations);
+router.get('/invitations', getInvitations); // Это GET, а не POST
 
 // --- Маршрут для удаления дубликатов ---
 router.post('/:id/remove-duplicates', removeDuplicates);
