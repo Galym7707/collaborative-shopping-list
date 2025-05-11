@@ -1,8 +1,8 @@
 // File: C:\Users\galym\Desktop\ShopSmart\backend\src\controllers\listController.ts
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import List, { IList, IListItem } from '../models/List'; // Убедись, что IListItem экспортируется
+import List, { IList, IListItem, ISharedWith } from '../models/List';
 import User from '../models/User';
 
 const ioOf = (req: Request) => (req as any).io;
@@ -11,14 +11,22 @@ const ioOf = (req: Request) => (req as any).io;
 export async function getAllLists(req: Request, res: Response, next: NextFunction) {
     console.log('[API] GET /api/lists - Request received');
     try {
-        if (!req.user?._id) { return res.status(401).json({ message: 'User not authenticated' }); }
-        const userId = req.user._id;
-        const lists = await List.find({ $or: [{ owner: userId }, { sharedWith: userId }] })
+        const userId = req.user?._id;
+        if (!userId) return res.status(401).json({ message: 'Not authorised' });
+        console.log(`[API] GET /api/lists - Fetching lists for user: ${userId}`);
+
+        const lists = await List.find({
+            $or: [
+                { owner: userId },
+                { sharedWith: { $elemMatch: { user: userId, status: 'accepted' } } }
+            ]
+        })
             .populate('owner', 'username email _id')
-            .populate('sharedWith', 'username email _id') // Populate sharedWith as users
+            .populate('sharedWith.user', 'username email _id')
             .sort({ updatedAt: -1 })
             .lean();
-        console.log(`[API] GET /api/lists - Found ${lists.length} lists for user ${userId}`);
+
+        console.log(`[API] GET /api/lists - Found ${lists.length} lists for user: ${userId}`);
         res.json(lists);
     } catch (err) { console.error("[API] GET /api/lists - Error:", err); next(err); }
 }
@@ -160,11 +168,11 @@ export async function deleteList(req: Request, res: Response, next: NextFunction
     } catch (err) { console.error(`[API] DELETE /api/lists/${listId} - Error:`, err); next(err); }
 }
 
-// --- POST /api/lists/:id/share (УПРОЩЕННЫЙ) ---
+// --- POST /api/lists/:id/share ---
 export async function shareList(req: Request, res: Response, next: NextFunction) {
     const listId = req.params.id;
-    const { email } = req.body;
-    console.log(`[API] POST /api/lists/${listId}/share - Inviting user ${email}`);
+    const { email, role = 'viewer' } = req.body as { email: string; role?: 'viewer' | 'editor' };
+    console.log(`[API] POST /api/lists/${listId}/share - Inviting user ${email} with role ${role}`);
     try {
         const ownerId = req.user?._id;
         if (!email || typeof email !== 'string') { return res.status(400).json({ message: 'Valid email required' }); }
@@ -172,35 +180,52 @@ export async function shareList(req: Request, res: Response, next: NextFunction)
 
         const list = await List.findById(listId);
         if (!list) { return res.status(404).json({ message: 'List not found' }); }
-        if (!list.owner.equals(ownerId)) { return res.status(403).json({ message: 'Only owner can share' });}
+        if (!list.owner.equals(ownerId)) { return res.status(403).json({ message: 'Only owner can share' }); }
 
         const userToInvite = await User.findOne({ email: email.toLowerCase().trim() });
         if (!userToInvite) { return res.status(404).json({ message: 'User with this email not found' }); }
-        if (userToInvite._id.equals(ownerId)) { return res.status(400).json({ message: 'Cannot share list with yourself' });}
-        
-        if (list.sharedWith.some(id => id.equals(userToInvite!._id))) { // Добавил ! для userToInvite (после проверки выше)
-             return res.status(400).json({ message: 'List already shared with this user' });
-        }
+        if (userToInvite._id.equals(ownerId)) { return res.status(400).json({ message: 'Cannot share list with yourself' }); }
 
-        list.sharedWith.push(userToInvite._id as mongoose.Types.ObjectId);
+        // Проверяем, есть ли уже такой пользователь в sharedWith
+        const existingEntryIndex = list.sharedWith.findIndex(entry => entry.user.equals(userToInvite._id));
+        if (existingEntryIndex > -1) {
+            // Пользователь уже есть, обновляем роль и статус
+            console.log(`[API] User ${email} already in sharedWith, updating role and status.`);
+            list.sharedWith[existingEntryIndex].role = role;
+            list.sharedWith[existingEntryIndex].status = 'pending';
+        } else {
+            // Новый пользователь, добавляем
+            console.log(`[API] Adding new user ${email} to sharedWith.`);
+            const newSharedEntry: ISharedWith = {
+                user: userToInvite._id as Types.ObjectId,
+                role: role,
+                status: 'pending'
+            };
+            list.sharedWith.push(newSharedEntry);
+        }
         await list.save();
-        console.log(`[API] POST /api/lists/${listId}/share - User ${email} added to sharedWith`);
+        console.log(`[API] POST /api/lists/${listId}/share - List saved with updated sharedWith`);
 
         const populatedList = await List.findById(listId)
             .populate('owner', 'username email _id')
-            .populate('sharedWith', 'username email _id')
+            .populate('sharedWith.user', 'username email _id')
             .lean();
-        
+
         const io = ioOf(req);
         if (io && populatedList && userToInvite?._id) {
             io.to(`list_${listId}`).emit('listUpdate', populatedList);
-            io.to(`user_${userToInvite._id}`).emit('listSharedWithYou', populatedList);
+            io.to(`user_${userToInvite._id}`).emit('invitePending', {
+                listId: listId,
+                listName: populatedList?.name,
+                inviterUsername: req.user?.username,
+                role: role
+            });
         }
-        res.status(200).json({ message: `List shared with ${userToInvite.username}`, list: populatedList });
+        res.status(200).json({ message: `Invitation sent to ${userToInvite.username}`, list: populatedList });
     } catch (error) { console.error(`[API] POST /api/lists/${listId}/share - Error:`, error); next(error); }
 }
 
-// --- DELETE /api/lists/:id/share/:userId (УПРОЩЕННЫЙ) ---
+// --- DELETE /api/lists/:id/share/:userId ---
 export async function removeUserAccess(req: Request, res: Response, next: NextFunction) {
     const { id: listId, userId: userIdToRemove } = req.params;
     console.log(`[API] DELETE /api/lists/${listId}/share/${userIdToRemove} - Removing access`);
@@ -211,16 +236,17 @@ export async function removeUserAccess(req: Request, res: Response, next: NextFu
 
         const list = await List.findById(listId);
         if (!list) { return res.status(404).json({ message: 'List not found' }); }
-        if (!list.owner.equals(ownerId)) { return res.status(403).json({ message: 'Only owner can remove access' });}
+        if (!list.owner.equals(ownerId)) { return res.status(403).json({ message: 'Only owner can remove access' }); }
 
         const userObjectIdToRemove = new mongoose.Types.ObjectId(userIdToRemove);
         const initialLength = list.sharedWith.length;
-        list.sharedWith = list.sharedWith.filter(id => !id.equals(userObjectIdToRemove));
+        list.sharedWith = list.sharedWith.filter(entry => !entry.user.equals(userObjectIdToRemove));
 
-        if (list.sharedWith.length === initialLength) { return res.status(404).json({ message: 'User not found in shared list' });}
+        if (list.sharedWith.length === initialLength) { return res.status(404).json({ message: 'User not found in shared list' }); }
         await list.save();
+        console.log(`[API] DELETE /api/lists/${listId}/share/${userIdToRemove} - User removed`);
 
-        const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith', 'username email _id').lean();
+        const populatedList = await List.findById(listId).populate('owner', 'username email _id').populate('sharedWith.user', 'username email _id').lean();
         const io = ioOf(req);
         if (io && populatedList) {
             io.to(`list_${listId}`).emit('listUpdate', populatedList);
@@ -266,13 +292,52 @@ export async function removeDuplicates(req: Request, res: Response, next: NextFu
     } catch (error) { console.error(`[API] POST /api/lists/${listId}/remove-duplicates - Error:`, error); next(error); }
 }
 
-// --- ЗАГЛУШКИ ДЛЯ НОВЫХ ФУНКЦИЙ ИЗ ТВОЕГО listRoutes.ts ---
+// --- Дополнительные функции для работы с приглашениями и ролями ---
 export async function respondToInvite(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Respond to invite: Not Implemented Yet' });
+    const { id: listId, userId } = req.params;
+    const action = req.path.endsWith('/accept') ? 'accepted' : 'declined';
+    console.log(`[API] respondToInvite for list ${listId}, user ${userId}, action: ${action}`);
+    try {
+        if (req.user!._id.toString() !== userId) return res.status(403).json({ message: 'Cannot respond for another user' });
+
+        const list = await List.findOneAndUpdate(
+            { _id: listId, "sharedWith.user": userId },
+            { $set: { "sharedWith.$.status": action } },
+            { new: true }
+        ).populate('owner', 'username email _id').populate('sharedWith.user', 'username email _id');
+
+        if (!list) return res.status(404).json({ message: 'Invitation or list not found' });
+
+        ioOf(req)?.to(`list_${listId}`).emit('listUpdate', list);
+        ioOf(req)?.to(`user_${list.owner._id}`).emit('inviteResponded', { listId, userId, status: action });
+
+        res.json({ message: `Invitation ${action}`, list });
+    } catch (err) { next(err); }
 }
+
 export async function changeRole(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Change role: Not Implemented Yet' });
+    const { id: listId, userId } = req.params;
+    const { role } = req.body as { role: 'viewer' | 'editor' };
+    console.log(`[API] changeRole for list ${listId}, user ${userId}, to role: ${role}`);
+    try {
+        if (!role || !['viewer', 'editor'].includes(role)) return res.status(400).json({ message: 'Invalid role specified' });
+
+        const list = await List.findOneAndUpdate(
+            { _id: listId, owner: req.user!._id, "sharedWith.user": userId },
+            { $set: { "sharedWith.$.role": role } },
+            { new: true }
+        ).populate('owner', 'username email _id').populate('sharedWith.user', 'username email _id');
+
+        if (!list) return res.status(404).json({ message: 'List or user in sharedWith not found, or you are not the owner.' });
+
+        ioOf(req)?.to(`list_${listId}`).emit('listUpdate', list);
+        ioOf(req)?.to(`list_${listId}`).emit('roleChanged', { listId, userId, newRole: role });
+        ioOf(req)?.to(`user_${userId}`).emit('yourRoleChanged', { listId, listName: list.name, newRole: role });
+
+        res.json({ message: 'Role updated', list });
+    } catch (err) { next(err); }
 }
+
 export async function toggleBought(req: Request, res: Response, next: NextFunction) {
     const { id: listId, itemId } = req.params;
     try {
@@ -280,12 +345,24 @@ export async function toggleBought(req: Request, res: Response, next: NextFuncti
         if (!list) return res.status(404).json({ message: "List not found" });
         const item = list.items.find(i => i._id === itemId);
         if (!item) return res.status(404).json({ message: "Item not found" });
-        
-        // Передаем isBought в теле для updateItem
         req.body = { isBought: !item.isBought };
-        return updateItem(req, res, next); // Вызываем существующий updateItem
+        return updateItem(req, res, next);
     } catch (err) { next(err); }
 }
+
 export async function getInvitations(req: Request, res: Response, next: NextFunction) {
-    res.status(501).json({ message: 'Get invitations: Not Implemented Yet' });
+    console.log(`[API] getInvitations for user ${req.user?.id}`);
+    try {
+        const userId = req.user?._id;
+        if (!userId) return res.status(401).json({ message: 'User not authenticated' });
+
+        const listsWithPendingInvites = await List.find({
+            "sharedWith.user": userId,
+            "sharedWith.status": "pending"
+        })
+            .populate('owner', 'username email _id')
+            .lean();
+
+        res.json(listsWithPendingInvites);
+    } catch (err) { console.error(`[API] getInvitations Error:`, err); next(err); }
 }
