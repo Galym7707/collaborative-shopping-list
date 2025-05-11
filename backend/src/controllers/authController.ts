@@ -1,12 +1,12 @@
 // File: C:\Users\galym\Desktop\ShopSmart\backend\src\controllers\authController.ts
 import { Request, Response, NextFunction } from 'express';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // <--- ИЗМЕНЕН ИМПОРТ
 import User, { IUser } from '../models/User';
 
 const JWT_EXPIRATION_SECONDS = process.env.JWT_EXPIRES_IN_SECONDS
     ? parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10)
-    : 7 * 24 * 60 * 60; // 7 дней по умолчанию
+    : 7 * 24 * 60 * 60;
 
 function signToken(id: string, email: string, username: string): string {
   const secret: Secret = process.env.JWT_SECRET!;
@@ -31,7 +31,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       return res.status(400).json({ message });
     }
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(password, salt); // bcryptjs.hash
     const user = new User({ username, email, passwordHash });
     await user.save();
     const token = signToken(user._id.toString(), user.email, user.username);
@@ -49,6 +49,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         console.error(`Login Error: User ${email} found but has missing or invalid passwordHash.`);
         return res.status(401).json({ message: 'Invalid credentials (error code: HASH_MISSING)' });
     }
+    // Метод comparePassword в модели User теперь будет использовать bcryptjs.compare
     const isValid = await user.comparePassword(password);
     if (!isValid) { return res.status(401).json({ message: 'Invalid credentials' }); }
     const token = signToken(user._id.toString(), user.email, user.username);

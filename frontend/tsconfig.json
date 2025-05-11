@@ -25,5 +25,4 @@
     // Если ЕСТЬ, то путь должен быть правильным, например: "./src/custom-types"
   },
   "include": ["src", "vite.config.ts"], // Включаем vite.config.ts для проверки типов
-  "references": [{ "path": "./tsconfig.node.json" }]
 }
