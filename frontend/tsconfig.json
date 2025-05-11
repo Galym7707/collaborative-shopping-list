@@ -1,25 +1,27 @@
 // File: C:\Users\galym\Desktop\ShopSmart\frontend\tsconfig.json
 {
   "compilerOptions": {
-    "target": "ESNext", // Поддержка современных возможностей JS
+    "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
-    "esModuleInterop": true, // Для лучшей совместимости с CommonJS модулями
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext", // <-- ВАЖНО для import.meta.env
-    "moduleResolution": "bundler", // Рекомендовано для Vite 5+ (или "Node" для старых версий)
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true, // Vite сам занимается сборкой
+    "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": "./src", // Позволяет использовать абсолютные пути типа "@/components/..."
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["*"] // Пример: import MyComponent from '@/components/MyComponent'
+      "@/*": ["*"]
     }
+    // "typeRoots": [] // Можно явно указать пустой массив, если нет кастомных глобальных типов
   },
-  "include": ["src", "vite.config.ts"], // Включаем vite.config.ts для проверки типов
+  "include": ["src", "./vite-env.d.ts", "vite.config.ts"], // Добавляем vite-env.d.ts в include
+  // "references": [{ "path": "./tsconfig.node.json" }] // Оставляем удаленным
 }

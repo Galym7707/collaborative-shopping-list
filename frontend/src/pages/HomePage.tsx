@@ -1,6 +1,6 @@
 // File: C:\Users\galym\Desktop\ShopSmart\frontend\src\pages\HomePage.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { useListStore, List } from '../store/listStore';
+import { useListStore } from '../store/listStore';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api';
@@ -10,6 +10,9 @@ import toast from 'react-hot-toast';
 import { UserGroupIcon, SparklesIcon, PlusCircleIcon, BeakerIcon, ShareIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { TrashIcon as TrashIconOutline } from '@heroicons/react/24/outline'; // Для дубликатов
 import { XCircleIcon } from '@heroicons/react/24/solid'; // Используем Solid крестик для удаления списка
+import { List, Item } from '../store/listTypes';
+
+type Unit = 'pcs' | 'kg' | 'l' | 'm' | 'pack';
 
 const HomePage: React.FC = () => {
   const {
@@ -20,7 +23,11 @@ const HomePage: React.FC = () => {
       error: listError,
       removeDuplicatesAPI,
       deleteListAPI, // Получаем экшен удаления
-      addItemAPI // Получаем экшен добавления элемента
+      addItemAPI, // Получаем экшен добавления элемента
+      toggle, // Получаем экшен переключения статуса
+      disconnectSocket,
+      setLists,
+      clearCurrentList
   } = useListStore();
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -98,7 +105,7 @@ const handleCreateList = async (e: React.FormEvent) => {
               if (items.length > 0) { setGeneratedItems(items); setSuggestion(null); toast.success(`AI suggested ${items.length} items!`); }
               else { setAiError(t('homePage.aiEmptyList')); toast.error(t('homePage.aiEmptyList')); }
           } else { const formattedSuggestion = res.suggestion.replace(/^[-*]\s*/gm, '• '); setSuggestion(formattedSuggestion); setGeneratedItems([]); }
-      } catch (e: any) { const message = e.response?.data?.message || e.message || t('homePage.aiError'); setAiError(message); toast.error(message); }
+      } catch (e: any) { const message = e.response?.data?.message || e.message || t('homePage.aiError'); setAiError(message); toast.error(message || 'Unknown error'); }
       finally { setAiLoading(false); }
   };
 
@@ -110,7 +117,7 @@ const handleCreateList = async (e: React.FormEvent) => {
           const newList = await createListAPI(listNameFromPrompt);
           if (!newList?._id) throw new Error("Failed to create list for generated items");
           const listId = newList._id;
-          await Promise.all(generatedItems.map(itemName => addItemAPI(listId, itemName)));
+          await Promise.all(generatedItems.map(itemName => addItemAPI(listId, { name: itemName })));
           toast.success(`Created list "${newList.name}" with ${generatedItems.length} items!`);
           setGeneratedItems([]); setPrompt('');
           navigate(`/list/${listId}`);
@@ -179,8 +186,8 @@ const handleCreateList = async (e: React.FormEvent) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {lists.map((list: List) => {
                const isOwner = user?._id === list.owner._id;
-               const isSharedWithOthers = list.sharedWith && list.sharedWith.filter(u => u._id !== user?._id).length > 0;
-               const isSharedToMe = list.sharedWith && list.sharedWith.some(u => u._id === user?._id);
+               const isSharedWithOthers = list.sharedWith && list.sharedWith.filter((e: any) => e._id !== user?._id).length > 0;
+               const isSharedToMe = list.sharedWith && list.sharedWith.some((e: any) => e._id === user?._id);
               return (
               <div key={list._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-blue-500/20 dark:hover:shadow-blue-400/10 transition-all duration-300 overflow-hidden flex flex-col border border-transparent hover:border-blue-300 dark:hover:border-blue-700">
                 <Link to={`/list/${list._id}`} className="block p-5 flex-grow hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">

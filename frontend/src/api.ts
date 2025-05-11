@@ -1,16 +1,9 @@
 // File: C:\Users\galym\Desktop\ShopSmart\frontend\src\api.ts
-// VITE_API_URL должен быть определен в переменных окружения Vercel
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 console.log(`[API Wrapper] Initial API_BASE_URL from env: ${API_BASE_URL}`);
 
-if (!API_BASE_URL) {
-    const message = "[API Wrapper] FATAL ERROR: VITE_API_URL is not defined in .env or environment variables.";
-    console.error(message);
-    // В разработке можно выбросить ошибку, чтобы сразу заметить
-    if (import.meta.env.DEV) {
-        // alert(message); // Для наглядности в разработке
-    }
-    // Для продакшена можно пытаться работать с относительным путем или показать ошибку пользователю
+if (!API_BASE_URL && import.meta.env.DEV) {
+    console.error("[API Wrapper] VITE_API_URL is not defined!");
 }
 
 export async function api<T>(
@@ -18,8 +11,23 @@ export async function api<T>(
     options: RequestInit = {}
 ): Promise<T> {
     const token = localStorage.getItem('authToken');
-    // Создаем объект для заголовков
-    const requestHeaders: Record<string, string> = { ...options.headers };
+    // Используем Record<string, string> для requestHeaders, т.к. new Headers() может быть проблемой
+    const requestHeaders: Record<string, string> = {};
+
+    // Копируем существующие заголовки из options.headers
+    if (options.headers) {
+        if (options.headers instanceof Headers) {
+            options.headers.forEach((value, key) => {
+                requestHeaders[key] = value;
+            });
+        } else if (Array.isArray(options.headers)) {
+            options.headers.forEach(([key, value]) => {
+                requestHeaders[key] = value;
+            });
+        } else { // Обычный объект
+            Object.assign(requestHeaders, options.headers);
+        }
+    }
 
     if (options.body && !requestHeaders['Content-Type']) {
         requestHeaders['Content-Type'] = 'application/json';
@@ -28,7 +36,7 @@ export async function api<T>(
         requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    const requestUrl = `${API_BASE_URL || ''}${path}`; // Добавляем || '' на случай, если API_BASE_URL не определен
+    const requestUrl = `${API_BASE_URL || ''}${path}`;
     const requestOptions: RequestInit = {
         ...options,
         headers: requestHeaders,
@@ -37,8 +45,8 @@ export async function api<T>(
     console.log(`[API Wrapper] Making ${options.method || 'GET'} request to: ${requestUrl}`);
     console.log(`[API Wrapper] Request options:`, {
         method: requestOptions.method,
-        headers: requestHeaders, // Логируем объект заголовков
-        body: requestOptions.body // Логируем тело, если оно есть
+        headers: requestHeaders,
+        body: requestOptions.body
     });
 
     let response: Response;
@@ -47,16 +55,12 @@ export async function api<T>(
         response = await fetch(requestUrl, requestOptions);
         console.log(`[API Wrapper] Response received from ${requestUrl}: Status ${response.status}`);
 
-        if (response.status === 401) { // Обработка 401 (например, токен истек)
-            console.warn('[API Wrapper] Received 401 Unauthorized. Clearing token and redirecting to login.');
+        if (response.status === 401) {
+            console.warn('[API Wrapper] Received 401 Unauthorized. Clearing token.');
             localStorage.removeItem('authToken');
-            localStorage.removeItem('authUser'); // Также очищаем пользователя
-            // Вместо window.location.replace лучше использовать navigate из react-router-dom,
-            // но api.ts не является React компонентом.
-            // Это можно обработать выше, в AuthContext или в сторе.
-            // Пока просто выбрасываем ошибку.
-            if (typeof window !== 'undefined') { // Проверка, что код выполняется в браузере
-                 window.location.href = '/login?sessionExpired=1'; // Простой редирект
+            localStorage.removeItem('authUser');
+            if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
+                 window.location.href = '/login?sessionExpired=1&reason=api_401';
             }
             throw new Error('Session expired or unauthorized. Please log in again.');
         }
@@ -70,24 +74,14 @@ export async function api<T>(
 
     if (!response.ok) {
         let errorData: any = { message: `Request failed with status ${response.status}` };
-        try {
-            errorData = await response.json();
-            console.log(`[API Wrapper] Error response body from ${requestUrl}:`, errorData);
-        } catch (e) {
-            console.warn(`[API Wrapper] Could not parse error response body for ${requestUrl} (Status: ${response.status})`, e);
-            errorData.message = response.statusText || errorData.message;
-        }
+        try { errorData = await response.json(); } catch (e) { errorData.message = response.statusText || errorData.message; }
         const error = new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-        (error as any).response = response;
-        (error as any).data = errorData;
+        (error as any).response = response; (error as any).data = errorData;
         console.error(`[API Wrapper] HTTP error from ${requestUrl}: ${response.status}`, errorData);
         throw error;
     }
 
-    if (response.status === 204) {
-        console.log(`[API Wrapper] Received 204 No Content from ${requestUrl}`);
-        return null as T;
-    }
+    if (response.status === 204) return null as T;
 
     try {
         const responseData = await response.json() as T;
@@ -96,7 +90,6 @@ export async function api<T>(
     } catch (parseError) {
          console.error(`[API Wrapper] Error parsing JSON response from ${requestUrl}:`, parseError);
          const error = new Error('Failed to parse server response.');
-         (error as any).response = response;
-         throw error;
+         (error as any).response = response; throw error;
     }
 }
