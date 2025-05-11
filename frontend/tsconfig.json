@@ -20,9 +20,6 @@
     "paths": {
       "@/*": ["*"] // Пример: import MyComponent from '@/components/MyComponent'
     }
-    // "typeRoots": ["./node_modules/@types", "./src/types"] // УБИРАЕМ или ИСПРАВЛЯЕМ, если есть папка src/types
-    // Если у тебя НЕТ папки src/types с глобальными декларациями .d.ts, эту строку можно удалить.
-    // Если ЕСТЬ, то путь должен быть правильным, например: "./src/custom-types"
   },
   "include": ["src", "vite.config.ts"], // Включаем vite.config.ts для проверки типов
 }
