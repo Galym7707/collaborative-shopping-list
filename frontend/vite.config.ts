@@ -10,12 +10,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  },
   server: {
-    port: 3000,
-    open: true,
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'https://collaborative-shopping-list-production.up.railway.app',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/ai': {
+        target: 'https://extensions.aitopia.ai',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

@@ -1,64 +1,52 @@
 // File: frontend/src/components/Header.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import ThemeToggle from '@/components/ThemeToggle';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const Header: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-        <Link
-          to="/"
-          className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
-        >
-          ShopSmart
+    <header className="bg-blue-600 text-white p-4 shadow-md">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-xl font-bold">
+          {t('header.title')}
         </Link>
-
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          <LanguageSwitcher />
-          <ThemeToggle />
-
-          {isAuthenticated() ? (
+        <nav className="flex space-x-4">
+          {user ? (
             <>
-              <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:inline">
-                {t('header.welcome', 'Hi')}, {user?.username || t('common.guest')}
-              </span>
-              <Link
-                to="/profile"
-                className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
-              >
-                {t('header.profile', 'Profile')}
+              <Link to="/" className="hover:underline">
+                {t('header.home')}
+              </Link>
+              <Link to="/profile" className="hover:underline">
+                {t('header.profile')}
               </Link>
               <button
-                onClick={logout}
-                className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md px-3 py-1.5 transition-colors"
+                onClick={handleLogout}
+                className="hover:underline focus:outline-none"
               >
-                {t('header.logout', 'Logout')}
+                {t('header.logout')}
               </button>
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
-              >
-                {t('header.login', 'Login')}
+              <Link to="/login" className="hover:underline">
+                {t('header.login')}
               </Link>
-              <Link
-                to="/register"
-                className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md px-3 py-1.5 transition-colors"
-              >
-                {t('header.register', 'Register')}
+              <Link to="/register" className="hover:underline">
+                {t('header.register')}
               </Link>
             </>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );

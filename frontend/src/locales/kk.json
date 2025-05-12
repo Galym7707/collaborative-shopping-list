@@ -9,7 +9,6 @@
     "guest": "Қонақ",
     "you": "Сіз"
   },
-
   "auth": {
     "loginTitle": "Аккаунтқа кіру",
     "registerTitle": "Аккаунт жасау",
@@ -35,7 +34,6 @@
     "emailExists": "Бұл email қолданылған",
     "usernameExists": "Бұл ат қолданылған"
   },
-
   "header": {
     "title": "ShopSmart",
     "home": "Басты бет",
@@ -45,11 +43,9 @@
     "welcome": "Сәлем",
     "profile": "Профиль"
   },
-
   "footer": {
-    "text": "© {{year}} ShopSmart. Барлық құқықтар қорғалған."
+    "text": "© {{year}} ShopSmart. Барлық құқықтар қорғалған."
   },
-
   "homePage": {
     "welcome": "Қош келдіңіз, {{name}}!",
     "myLists": "Менің тізімдерім",
@@ -77,7 +73,6 @@
     "aiSuggestedItems": "AI ұсынған заттар:",
     "aiAddToListButton": "Осы заттармен тізім жасау"
   },
-
   "listPage": {
     "loading": "Тізім жүктелуде…",
     "errorLoading": "Тізімді жүктеу қатесі",
@@ -96,7 +91,6 @@
     "cleaning": "Тазалануда…",
     "cleaned": "Қайталаулар жойылды"
   },
-
   "members": {
     "title": "Тізім қатысушылары",
     "roleEditor": "Редактор",
@@ -109,16 +103,13 @@
     "title": "Қатысушылар",
     "pending": "күтіп тұр"
   },
-
   "shoppingList": {
     "empty": "Тізім бос. Заттар қосыңыз!"
   },
-
   "addItemForm": {
     "placeholder": "Зат атауын енгізіңіз…",
     "addButton": "Қосу"
   },
-
   "shareModal": {
     "title": "«{{listName}}» тізімімен бөлісу",
     "emailLabel": "Email мекенжайы",
@@ -137,29 +128,24 @@
     "viewer": "Көрермен",
     "editor": "Редактор"
   },
-
   "notFoundPage": {
     "title": "Бет табылмады",
     "message": "Кешіріңіз! Бұл бет табылмады.",
     "goHome": "Басты бетке өту"
   },
-
   "item": {
     "bought": "Сатып алынды",
     "unbought": "Сатып алынбады"
   },
-
   "theme": {
     "light": "Жарық режим",
     "dark": "Қараңғы режим"
   },
-
   "language": {
     "english": "Ағылшын",
     "russian": "Орысша",
     "kazakh": "Қазақша"
   },
-
   "words": {
     "list": "Тізім",
     "item": "Зат",
@@ -205,7 +191,6 @@
     "dairyCheese": "Сүт және ірімшік",
     "bakery": "Нан-тоқаш өнімдері"
   },
-
   "units": {
     "pcs": "дана",
     "kg": "кг",

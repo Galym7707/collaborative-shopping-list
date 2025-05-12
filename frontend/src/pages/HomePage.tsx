@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useListStore } from '@/store/listStore';
 import toast from 'react-hot-toast';
 import { List, Unit } from '@/store/listTypes';
+import { useTranslation } from 'react-i18next';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     lists,
     fetchLists,
@@ -35,25 +37,26 @@ const HomePage: React.FC = () => {
 
   const handleCreateList = async () => {
     if (!newListName.trim()) {
-      toast.error('List name is required');
+      toast.error(t('homePage.enterListName'));
       return;
     }
     try {
       const newList = await createList(newListName.trim());
-      toast.success(`List "${newList.name}" created!`);
+      toast.success(t('homePage.welcome', { name: newList.name }));
       navigate(`/list/${newList._id}`);
       setNewListName('');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create list');
+      toast.error(err.message || t('common.error'));
     }
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!window.confirm('Are you sure you want to delete this list?')) return;
+    if (!window.confirm(t('words.delete') + '?')) return;
     try {
       await deleteList(listId);
+      toast.success(t('listPage.cleaned'));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete list');
+      toast.error(err.message || t('common.error'));
     }
   };
 
@@ -68,40 +71,40 @@ const HomePage: React.FC = () => {
         await addItem(listId, item.name, item.quantity, item.unit, item.category);
       }
       await removeDuplicates(listId);
-      toast.success(`Added ${generatedItems.length} items to list!`);
+      toast.success(t('homePage.aiSuggestedItems'));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to generate items');
+      toast.error(err.message || t('homePage.aiError'));
     }
   };
 
   if (isLoadingLists) {
-    return <div>Loading lists...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div>{t('common.error')}: {error}</div>;
   }
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Your Shopping Lists</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('homePage.myLists')}</h1>
       <div className="mb-4">
         <input
           type="text"
           value={newListName}
           onChange={e => setNewListName(e.target.value)}
-          placeholder="Enter new list name"
-          className="mr-2 rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          placeholder={t('homePage.listNamePlaceholder')}
+          className="input mr-2"
         />
         <button
           onClick={handleCreateList}
-          className="bg-blue-600 text-white rounded-md py-2 px-4 hover:bg-blue-700"
+          className="btn btn-primary"
         >
-          Create List
+          {t('homePage.createButton')}
         </button>
       </div>
       {lists.length === 0 ? (
-        <p className="text-gray-500">No lists yet. Create one above!</p>
+        <p className="text-gray-500">{t('homePage.noLists')}</p>
       ) : (
         <ul className="space-y-2">
           {lists.map((list: List) => (
@@ -117,13 +120,13 @@ const HomePage: React.FC = () => {
                   onClick={() => handleGenerateItems(list._id)}
                   className="text-sm text-green-600 hover:text-green-700 mr-2"
                 >
-                  Generate Items
+                  {t('homePage.aiGenerateButton')}
                 </button>
                 <button
                   onClick={() => handleDeleteList(list._id)}
                   className="text-sm text-red-600 hover:text-red-700"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
               </div>
             </li>

@@ -9,7 +9,6 @@
     "guest": "Гость",
     "you": "Вы"
   },
-
   "auth": {
     "loginTitle": "Вход в аккаунт",
     "registerTitle": "Создание аккаунта",
@@ -35,7 +34,6 @@
     "emailExists": "Пользователь с таким email уже существует",
     "usernameExists": "Пользователь с таким именем уже существует"
   },
-
   "header": {
     "title": "ShopSmart",
     "home": "Главная",
@@ -45,11 +43,9 @@
     "welcome": "Привет",
     "profile": "Профиль"
   },
-
   "footer": {
     "text": "© {{year}} ShopSmart. Все права защищены."
   },
-
   "homePage": {
     "welcome": "Добро пожаловать, {{name}}!",
     "myLists": "Мои списки",
@@ -77,7 +73,6 @@
     "aiSuggestedItems": "AI предложил товары:",
     "aiAddToListButton": "Создать список с этими товарами"
   },
-
   "listPage": {
     "loading": "Загрузка списка...",
     "errorLoading": "Ошибка загрузки списка",
@@ -96,7 +91,6 @@
     "cleaning": "Очистка...",
     "cleaned": "Дубликаты удалены"
   },
-
   "members": {
     "title": "Участники списка",
     "roleEditor": "Редактор",
@@ -109,16 +103,13 @@
     "title": "Участники",
     "pending": "ожидает"
   },
-
   "shoppingList": {
     "empty": "Список пуст. Добавьте товары!"
   },
-
   "addItemForm": {
     "placeholder": "Введите название товара...",
     "addButton": "Добавить"
   },
-
   "shareModal": {
     "title": "Поделиться «{{listName}}»",
     "emailLabel": "Email адрес",
@@ -137,29 +128,24 @@
     "viewer": "Зритель",
     "editor": "Редактор"
   },
-
   "notFoundPage": {
     "title": "Страница не найдена",
     "message": "Упс! Страница, которую вы ищете, не существует.",
     "goHome": "На главную"
   },
-
   "item": {
     "bought": "Куплено",
     "unbought": "Не куплено"
   },
-
   "theme": {
     "light": "Светлая тема",
     "dark": "Тёмная тема"
   },
-
   "language": {
     "english": "Английский",
     "russian": "Русский",
     "kazakh": "Казахский"
   },
-
   "words": {
     "list": "Список",
     "item": "Товар",
@@ -205,7 +191,6 @@
     "dairyCheese": "Молочные и сырные продукты",
     "bakery": "Выпечка"
   },
-
   "units": {
     "pcs": "шт",
     "kg": "кг",

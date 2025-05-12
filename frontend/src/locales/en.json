@@ -9,7 +9,6 @@
     "guest": "Guest",
     "you": "You"
   },
-
   "auth": {
     "loginTitle": "Sign in to your account",
     "registerTitle": "Create your account",
@@ -35,7 +34,6 @@
     "emailExists": "A user with this email already exists",
     "usernameExists": "A user with this username already exists"
   },
-
   "header": {
     "title": "ShopSmart",
     "home": "Home",
@@ -45,11 +43,9 @@
     "welcome": "Hi",
     "profile": "Profile"
   },
-
   "footer": {
-    "text": "© {{year}} ShopSmart. All rights reserved."
+    "text": "© {{year}} ShopSmart. All rights reserved."
   },
-
   "homePage": {
     "welcome": "Welcome, {{name}}!",
     "myLists": "My Lists",
@@ -76,9 +72,7 @@
     "aiEmptyList": "AI couldn't generate items for this request.",
     "aiSuggestedItems": "AI suggested items:",
     "aiAddToListButton": "Create list with these items"
-
   },
-
   "listPage": {
     "loading": "Loading list…",
     "errorLoading": "Error loading list",
@@ -97,7 +91,6 @@
     "cleaning": "Cleaning…",
     "cleaned": "Duplicates removed"
   },
-
   "members": {
     "title": "List members",
     "roleEditor": "Editor",
@@ -110,16 +103,13 @@
     "title": "Participants",
     "pending": "waiting"
   },
-
   "shoppingList": {
     "empty": "The list is empty. Add some items!"
   },
-
   "addItemForm": {
     "placeholder": "Enter item name…",
     "addButton": "Add"
   },
-
   "shareModal": {
     "title": "Share \"{{listName}}\"",
     "emailLabel": "Email address",
@@ -136,29 +126,24 @@
     "remove": "Remove",
     "enterEmail": "Please enter a valid email address."
   },
-
   "notFoundPage": {
     "title": "Page not found",
     "message": "Oops! The page you're looking for doesn't exist.",
     "goHome": "Go to homepage"
   },
-
   "item": {
     "bought": "Bought",
     "unbought": "Unbought"
   },
-
   "theme": {
     "light": "Light mode",
     "dark": "Dark mode"
   },
-
   "language": {
     "english": "English",
     "russian": "Russian",
     "kazakh": "Kazakh"
   },
-  
   "words": {
     "list": "List",
     "item": "Item",
@@ -204,7 +189,6 @@
     "dairyCheese": "Dairy & Cheese",
     "bakery": "Bakery"
   },
-
   "units": {
     "pcs": "pcs",
     "kg": "kg",
@@ -212,5 +196,4 @@
     "m": "m",
     "pack": "pack"
   }
-
 }
