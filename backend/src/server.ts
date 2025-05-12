@@ -1,4 +1,4 @@
-// File: C:\Users\galym\Desktop\ShopSmart\backend\src\server.ts
+// File: C:\Users\galym\Desktop\collaborative-shopping-list\backend\src\server.ts
 import * as dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -21,8 +21,8 @@ const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'CLIENT_URL'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-    console.error(`❌ FATAL ERROR: Missing required environment variables: ${missingVars.join(', ')}`);
-    process.exit(1);
+  console.error(`❌ FATAL ERROR: Missing required environment variables: ${missingVars.join(', ')}`);
+  process.exit(1);
 }
 if (!process.env.GOOGLE_API_KEY) {
   console.warn('⚠️ WARNING: GOOGLE_API_KEY is not set. AI features will be disabled.');
@@ -46,8 +46,8 @@ const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
     origin: process.env.CLIENT_URL!,
-    methods: ['GET','POST','PATCH','DELETE'],
-  }
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  },
 });
 
 app.use(cors({ origin: process.env.CLIENT_URL! }));
@@ -65,29 +65,43 @@ io.use((socket: Socket, next: (err?: ExtendedError) => void) => {
     return next(new Error('unauthorized_no_token'));
   }
   try {
-    const payload = jwt.verify(token, secret) as IUser & {id: string};
+    const payload = jwt.verify(token, secret) as IUser & { id: string };
     socket.data.user = { id: payload.id, email: payload.email, username: payload.username };
     console.log(`[WS Auth OK] Socket ${socket.id} authenticated as user ${payload.email}.`);
     next();
   } catch (err: any) {
     console.error(`[WS Auth Error] Socket ${socket.id} - Invalid token:`, err.message);
-    if (err.name === 'TokenExpiredError') { return next(new Error('jwt_expired')); }
+    if (err.name === 'TokenExpiredError') {
+      return next(new Error('jwt_expired'));
+    }
     return next(new Error('unauthorized_invalid_token'));
   }
 });
 
 io.on('connection', (socket: Socket) => {
-  const connectedUser = (socket.data as { user?: {id:string, email?: string, username?: string } }).user;
+  const connectedUser = (socket.data as { user?: { id: string; email?: string; username?: string } }).user;
   console.log(`🔌 WS connected: ${socket.id}, User: ${connectedUser?.email}`);
   if (connectedUser?.id) {
-      const userRoom = `user_${connectedUser.id}`;
-      console.log(`[WS] Socket ${socket.id} automatically joining room: ${userRoom}`);
-      socket.join(userRoom);
-  } else { console.warn(`[WS] Cannot join user room for socket ${socket.id}: User ID missing.`); }
-  socket.on('joinList', async (listId: string) => { /* ... */ });
-  socket.on('leaveList', (listId: string) => { /* ... */ });
-  socket.on('disconnect', reason => { /* ... */ });
-  socket.on('error', (err) => { /* ... */ });
+    const userRoom = `user_${connectedUser.id}`;
+    console.log(`[WS] Socket ${socket.id} automatically joining room: ${userRoom}`);
+    socket.join(userRoom);
+  } else {
+    console.warn(`[WS] Cannot join user room for socket ${socket.id}: User ID missing.`);
+  }
+  socket.on('joinList', async (listId: string) => {
+    socket.join(`list_${listId}`);
+    console.log(`[WS] Socket ${socket.id} joined room: list_${listId}`);
+  });
+  socket.on('leaveList', (listId: string) => {
+    socket.leave(`list_${listId}`);
+    console.log(`[WS] Socket ${socket.id} left room: list_${listId}`);
+  });
+  socket.on('disconnect', (reason) => {
+    console.log(`🔌 WS disconnected: ${socket.id}, Reason: ${reason}`);
+  });
+  socket.on('error', (err) => {
+    console.error(`[WS Error] Socket ${socket.id}:`, err.message);
+  });
 });
 
 app.get('/api', (_req, res) => res.send('ShopSmart API is running'));
@@ -99,11 +113,13 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('💥 ERROR:', err);
   const statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
-  if (err.details?.startsWith('[GoogleGenerativeAI Error]')) { message = `AI Service Error: ${err.message}`; }
+  if (err.details?.startsWith('[GoogleGenerativeAI Error]')) {
+    message = `AI Service Error: ${err.message}`;
+  }
   res.status(statusCode).json({ message });
 });
 
-const PORT = process.env.PORT || 5001;
-server.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 5001; // Используем PORT от Railway
+server.listen(PORT, '0.0.0.0', () => { // Слушаем все интерфейсы для Railway
+  console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
 });

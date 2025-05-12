@@ -1,4 +1,4 @@
-// File: ShopSmart/backend/tsconfig.json
+// File: collaborative-shopping-list/backend/tsconfig.json
 {
     "compilerOptions": {
       "target": "ES2020",                     /* Specify ECMAScript target version */
