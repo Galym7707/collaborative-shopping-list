@@ -1,20 +1,17 @@
+// File: frontend/src/components/ShareListModal.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useListStore } from '../store/listStore';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { List, SharedWithEntry } from '../store/listTypes';
+import { List } from '../store/listTypes';
 
 interface ShareListModalProps {
   isOpen: boolean;
   onClose: () => void;
-  list: {
-    _id: string;
-    name: string;
-    sharedWith: { _id: string; email: string; role: 'viewer' | 'editor'; status: 'pending' | 'accepted' | 'declined' }[];
-  };
+  list: List;
 }
 
-const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }) => {
+const ShareListModal: React.FC<ShareListModalProps> = React.memo(({ isOpen, onClose, list }) => {
   const invite = useListStore(s => s.inviteUserToListAPI);
   const fetchListById = useListStore(s => s.fetchListById);
   const [email, setEmail] = useState('');
@@ -31,6 +28,11 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
   const handleShare = useCallback(async () => {
     if (!email.trim()) {
       toast.error('Please enter an email address');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
       return;
     }
     setBusy(true);
@@ -77,7 +79,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="user@example.com"
-              className="input mt-1 w-full"
+              className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
           </div>
 
@@ -89,7 +91,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
               disabled={busy}
               value={role}
               onChange={e => setRole(e.target.value as 'viewer' | 'editor')}
-              className="input mt-1 w-full"
+              className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             >
               <option value="viewer">Viewer – can view only</option>
               <option value="editor">Editor – can make changes</option>
@@ -99,7 +101,9 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
           <button
             onClick={handleShare}
             disabled={busy}
-            className="btn btn-primary w-full"
+            className={`w-full rounded-md px-4 py-2 text-white font-medium ${
+              busy ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            } transition-colors`}
           >
             {busy ? 'Sending…' : 'Send Invitation'}
           </button>
@@ -142,6 +146,6 @@ const ShareListModal: React.FC<ShareListModalProps> = ({ isOpen, onClose, list }
       </aside>
     </div>
   );
-};
+});
 
 export default ShareListModal;

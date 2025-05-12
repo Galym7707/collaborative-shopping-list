@@ -1,56 +1,91 @@
-// File: C:\Users\galym\Desktop\ShopSmart\frontend\src\components\AddItemForm.tsx
+// File: frontend/src/components/AddItemForm.tsx
 import React, { useState } from 'react';
-import { useTranslation }   from 'react-i18next';
-import { PlusIcon }         from '@heroicons/react/24/solid';
-import { useListStore }     from '../store/listStore';
-import { Unit, Item }       from '../store/listTypes'; // Импортируем Unit и Item
-import { CATEGORIES, CategoryKey } from '../constants/categories';
+import { useListStore } from '@/store/listStore';
+import { Unit, Item } from '@/store/listTypes';
+import toast from 'react-hot-toast';
 
-const UNITS: Unit[] = ['pcs', 'kg', 'l', 'm', 'pack'];
-
-interface Props { listId: string }
+interface Props {
+  listId: string;
+}
 
 const AddItemForm: React.FC<Props> = ({ listId }) => {
-  const { t }      = useTranslation();
-  const addItemAPI = useListStore(s => s.addItemAPI);
-
+  const addItem = useListStore(s => s.addItem);
   const [name, setName] = useState('');
-  const [qty,  setQty]  = useState<number>(1);
+  const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState<Unit>('pcs');
-  const [cat,  setCat]  = useState<CategoryKey>('other');
-  const [loading, setLoading] = useState(false);
-
-  const reset = () => { setName(''); setQty(1); setUnit('pcs'); setCat('other'); };
+  const [category, setCategory] = useState('Uncategorized');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedName = name.trim();
-    if (!trimmedName || loading) return;
-    setLoading(true);
-    // Собираем payload в соответствии с Partial<Omit<Item, ...>> & { name: string }
-    const payload: Partial<Omit<Item, '_id' | 'isBought' | 'boughtBy'>> & { name: string } = {
-      name: trimmedName,
-      quantity: qty,
-      unit,
-      category: cat,
-    };
-    await addItemAPI(listId, payload);
-    reset();
-    setLoading(false);
+    if (!name.trim()) {
+      toast.error('Item name is required');
+      return;
+    }
+    try {
+      await addItem(listId, name.trim(), quantity, unit, category);
+      setName('');
+      setQuantity(1);
+      setUnit('pcs');
+      setCategory('Uncategorized');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add item');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-center">
-      <input className="input flex-grow" placeholder={t('addItemForm.placeholder', 'Enter item…')} value={name} onChange={e => setName(e.target.value)} disabled={loading} />
-      <select className="input w-36" value={cat} onChange={e => setCat(e.target.value as CategoryKey)} disabled={loading}>
-        {CATEGORIES.map(key => ( <option key={key} value={key}> {t(`categories.${key}`, key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()))} </option> ))}
-      </select>
-      <input type="number" min="1" step="1" className="input w-20" title={t('addItemForm.qty', 'Qty')} value={qty} onChange={e => setQty(Math.max(1, +e.target.value))} disabled={loading} />
-      <select className="input w-20" value={unit} onChange={e => setUnit(e.target.value as Unit)} disabled={loading}>
-        {UNITS.map(u => ( <option key={u} value={u}> {t(`units.${u}`, u)} </option> ))}
-      </select>
-      <button type="submit" className="btn btn-primary p-3" disabled={loading || !name.trim()}> <PlusIcon className="h-5 w-5"/> </button>
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="mt-1 w-full rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          placeholder="Enter item name"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
+        <input
+          type="number"
+          value={quantity}
+          onChange={e => setQuantity(Number(e.target.value))}
+          min="1"
+          className="mt-1 w-full rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit</label>
+        <select
+          value={unit}
+          onChange={e => setUnit(e.target.value as Unit)}
+          className="mt-1 w-full rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        >
+          <option value="pcs">Pieces</option>
+          <option value="kg">Kilograms</option>
+          <option value="l">Liters</option>
+          <option value="m">Meters</option>
+          <option value="pack">Pack</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+        <input
+          type="text"
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+          className="mt-1 w-full rounded-md border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          placeholder="Enter category"
+        />
+      </div>
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white rounded-md py-2 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+      >
+        Add Item
+      </button>
     </form>
   );
 };
+
 export default AddItemForm;

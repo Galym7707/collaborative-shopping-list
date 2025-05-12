@@ -1,27 +1,24 @@
-// File: C:\Users\galym\Desktop\ShopSmart\frontend\tsconfig.json
 {
   "compilerOptions": {
     "target": "ESNext",
-    "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "moduleResolution": "node",
     "jsx": "react-jsx",
-    "baseUrl": "./src",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "allowJs": false,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "baseUrl": "src",
     "paths": {
       "@/*": ["*"]
-    }
-    // "typeRoots": [] // Можно явно указать пустой массив, если нет кастомных глобальных типов
+    },
+    "types": ["vite/client"]
   },
-  "include": ["src", "./vite-env.d.ts", "vite.config.ts"], // Добавляем vite-env.d.ts в include
-  // "references": [{ "path": "./tsconfig.node.json" }] // Оставляем удаленным
+  "include": ["src/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

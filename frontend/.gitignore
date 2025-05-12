@@ -1,0 +1,22 @@
+# Скомпилированные файлы
+dist/
+src/*.js
+src/**/*.js
+
+# Зависимости
+node_modules/
+package-lock.json
+
+# Логи и кэш
+*.log
+.vite/
+.cache/
+
+# Переменные окружения
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
