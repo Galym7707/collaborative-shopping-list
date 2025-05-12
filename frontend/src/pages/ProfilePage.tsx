@@ -20,6 +20,7 @@ const ProfilePage: React.FC = () => {
   const handleAccept = async (listId: string) => {
     try {
       await acceptInvitationAPI(listId);
+      toast.success('Invitation accepted!');
     } catch (err: any) {
       toast.error(err.message || 'Failed to accept invitation');
     }
@@ -28,6 +29,7 @@ const ProfilePage: React.FC = () => {
   const handleDecline = async (listId: string) => {
     try {
       await declineInvitationAPI(listId);
+      toast.success('Invitation declined!');
     } catch (err: any) {
       toast.error(err.message || 'Failed to decline invitation');
     }
@@ -58,11 +60,13 @@ const ProfilePage: React.FC = () => {
               key={invitation.listId}
               className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded"
             >
-              <span>{invitation.listName} (Invited by {invitation.inviterUsername})</span>
-              <div>
+              <span>
+                {invitation.listName} (Invited by {invitation.inviterUsername})
+              </span>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => handleAccept(invitation.listId)}
-                  className="text-sm text-green-600 hover:text-green-700 mr-2"
+                  className="text-sm text-green-600 hover:text-green-700"
                 >
                   Accept
                 </button>

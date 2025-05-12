@@ -321,7 +321,10 @@ export const useListStore = create<ListState>()(
 
             const socketListeners = {
               connect: () => {
-                console.log('Socket connected');
+                console.log('Socket connected successfully');
+              },
+              connect_error: (err: Error) => {
+                console.error('Socket connection error:', err.message);
               },
               disconnect: () => {
                 console.log('Socket disconnected');
@@ -340,7 +343,7 @@ export const useListStore = create<ListState>()(
                 set(state => {
                   state.invitations.push(data);
                 });
-                toast(`New invitation to join "${data.listName}"`);
+                toast.success(`New invitation to join "${data.listName}"`);
               },
               itemAdded: (data: { listId: string; item: Item }) => {
                 set(state => {
