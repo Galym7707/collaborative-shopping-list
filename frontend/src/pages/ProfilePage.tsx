@@ -54,7 +54,10 @@ const ProfilePage: React.FC = () => {
       ) : (
         <ul className="space-y-2">
           {invitations.map(invitation => (
-            <li key={invitation.listId} className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded">
+            <li
+              key={invitation.listId}
+              className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded"
+            >
               <span>{invitation.listName} (Invited by {invitation.inviterUsername})</span>
               <div>
                 <button

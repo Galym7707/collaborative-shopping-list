@@ -1,8 +1,9 @@
 // File: frontend/src/components/MembersDrawer.tsx
 import React from 'react';
-import { UserIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { UserIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { List, SharedWithEntry } from '@/store/listTypes';
-import { useTranslation, TFunction } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 import { useListStore } from '@/store/listStore';
 import toast from 'react-hot-toast';
 
@@ -135,15 +136,15 @@ function MemberRow({ name, email, role, status, t, userId, onRoleChange, onRemov
               status === 'pending'
                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                 : status === 'accepted'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                ? 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100'
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
             }`}
           >
             {status === 'pending'
               ? t('members.pending', 'Pending')
               : status === 'accepted'
-                ? t('members.accepted', 'Accepted')
-                : t('members.declined', 'Declined')}
+              ? t('members.accepted', 'Accepted')
+              : t('members.declined', 'Declined')}
           </span>
         )}
       </div>

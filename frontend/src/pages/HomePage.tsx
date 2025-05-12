@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useListStore } from '@/store/listStore';
 import toast from 'react-hot-toast';
-import { List } from '@/store/listTypes';
+import { List, Unit } from '@/store/listTypes';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleGenerateItems = async (listId: string) => {
-    const generatedItems = [
+    const generatedItems: { name: string; quantity: number; unit: Unit; category: string }[] = [
       { name: 'Milk', quantity: 2, unit: 'l', category: 'Dairy' },
       { name: 'Bread', quantity: 1, unit: 'pcs', category: 'Bakery' },
       { name: 'Eggs', quantity: 12, unit: 'pcs', category: 'Dairy' },

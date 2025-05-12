@@ -21,7 +21,7 @@ interface ListState {
   fetchLists: () => Promise<void>;
   fetchListById: (listId: string) => Promise<void>;
   fetchInvitations: () => Promise<void>;
-  createList: (name: string) => Promise<void>;
+  createList: (name: string) => Promise<List>;
   deleteList: (listId: string) => Promise<void>;
   addItem: (listId: string, name: string, quantity?: number, unit?: Item['unit'], category?: string) => Promise<void>;
   toggleItem: (listId: string, itemId: string, currentIsBought: boolean) => Promise<void>;

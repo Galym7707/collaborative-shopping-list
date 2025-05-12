@@ -13,8 +13,12 @@ interface AuthContextType {
   user: UserInfo | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  isLoggingIn: boolean;
+  isRegistering: boolean;
+  login: (credentials: { email: string; password: string }) => Promise<string | null>;
+  register: (credentials: { username: string; email: string; password: string }) => Promise<string | null>;
   logout: () => void;
+  isAuthenticated: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserInfo | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -45,7 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async ({ email, password }: { email: string; password: string }): Promise<string | null> => {
+    setIsLoggingIn(true);
     try {
       const response = await api<{ user: UserInfo; token: string }>('/auth/login', {
         method: 'POST',
@@ -54,8 +61,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem('token', response.token);
+      return null;
     } catch (err: any) {
-      throw new Error(err.message || 'Login failed');
+      const message = err.message || 'Login failed';
+      return message;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const register = async ({
+    username,
+    email,
+    password,
+  }: {
+    username: string;
+    email: string;
+    password: string;
+  }): Promise<string | null> => {
+    setIsRegistering(true);
+    try {
+      const response = await api<{ user: UserInfo; token: string }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, email, password }),
+      });
+      setUser(response.user);
+      setToken(response.token);
+      localStorage.setItem('token', response.token);
+      return null;
+    } catch (err: any) {
+      const message = err.message || 'Registration failed';
+      return message;
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -65,8 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
   };
 
+  const isAuthenticated = () => !!token;
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, isLoggingIn, isRegistering, login, register, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

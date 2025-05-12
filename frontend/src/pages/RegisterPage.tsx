@@ -1,9 +1,9 @@
-// File: C:\Users\galym\Desktop\ShopSmart\frontend\src\pages\RegisterPage.tsx
+// File: frontend/src/pages/RegisterPage.tsx
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext'; // Используем useAuth
+import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast'; // Для проверки обязательных полей
+import toast from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
   const { register, isRegistering } = useAuth();
@@ -12,28 +12,25 @@ const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState<string | null>(null); // Локальное состояние для ошибки формы
+  const [formError, setFormError] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null); // Сбрасываем ошибку перед новой попыткой
+    setFormError(null);
 
-    // Проверка на пустые поля
     if (!username || !email || !password) {
       const errorMsg = t('auth.fillAllFields', 'Please fill in all fields');
-      setFormError(errorMsg); // Показываем ошибку на форме
-      toast.error(errorMsg); // И во всплывающем окне
+      setFormError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
-    // Вызываем register из AuthContext
     const errorResult = await register({ username, email, password });
 
-    // Если register вернул сообщение об ошибке, показываем его на форме
     if (errorResult) {
       setFormError(errorResult);
+      toast.error(errorResult);
     }
-    // Успешное сообщение и редирект обрабатываются внутри register
   };
 
   return (
@@ -45,7 +42,6 @@ const RegisterPage: React.FC = () => {
           </h2>
         </div>
         <form onSubmit={onSubmit} className="mt-8 space-y-6">
-          {/* Отображение ошибки формы */}
           {formError && (
             <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
               {formError}
@@ -54,14 +50,20 @@ const RegisterPage: React.FC = () => {
 
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="username" className="sr-only">{t('auth.usernameLabel', 'Username')}</label>
+              <label htmlFor="username" className="sr-only">
+                {t('auth.usernameLabel', 'Username')}
+              </label>
               <input
                 id="username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${formError && (formError.includes('username') || formError.includes('field')) ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
+                  formError && (formError.includes('username') || formError.includes('field'))
+                    ? 'border-red-500'
+                    : 'border-gray-300 dark:border-gray-700'
+                } placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder={t('auth.usernameLabel', 'Username')}
                 value={username}
                 onChange={e => setUsername(e.target.value)}
@@ -69,14 +71,20 @@ const RegisterPage: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="email-address" className="sr-only">{t('auth.emailLabel', 'Email address')}</label>
+              <label htmlFor="email-address" className="sr-only">
+                {t('auth.emailLabel', 'Email address')}
+              </label>
               <input
                 id="email-address"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${formError && (formError.includes('email') || formError.includes('field')) ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
+                  formError && (formError.includes('email') || formError.includes('field'))
+                    ? 'border-red-500'
+                    : 'border-gray-300 dark:border-gray-700'
+                } placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder={t('auth.emailLabel', 'Email address')}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -84,14 +92,20 @@ const RegisterPage: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">{t('auth.passwordLabel', 'Password')}</label>
+              <label htmlFor="password" className="sr-only">
+                {t('auth.passwordLabel', 'Password')}
+              </label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${formError && (formError.includes('password') || formError.includes('field')) ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
+                  formError && (formError.includes('password') || formError.includes('field'))
+                    ? 'border-red-500'
+                    : 'border-gray-300 dark:border-gray-700'
+                } placeholder-gray-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder={t('auth.passwordLabel', 'Password')}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -111,7 +125,10 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="text-sm text-center">
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
               {t('auth.haveAccount', 'Already have an account? Sign in')}
             </Link>
           </div>
