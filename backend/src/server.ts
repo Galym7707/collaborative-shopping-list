@@ -119,7 +119,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(statusCode).json({ message });
 });
 
-const PORT = process.env.PORT || 5001; // Используем PORT от Railway
-server.listen(PORT, '0.0.0.0', () => { // Слушаем все интерфейсы для Railway
+const PORT = parseInt(process.env.PORT || '5001', 10); // Преобразуем PORT в число
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
 });
